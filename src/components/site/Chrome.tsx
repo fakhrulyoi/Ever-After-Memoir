@@ -1,7 +1,8 @@
 'use client'
 import { AnimatePresence, m, useReducedMotion, useSpring } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { useSite } from './context'
+import { usePathname } from 'next/navigation'
+import { SiteLink, useSite } from './context'
 import { Wordmark } from './Wordmark'
 import { IconWhatsApp } from './icons'
 import { EASE } from '../motion/MotionProvider'
@@ -100,6 +101,44 @@ export function ViewCursor() {
   )
 }
 
+/** Phones: a slim bar to check dates, shown after the opening and hidden on the booking page. */
+export function MobileBookBar() {
+  const { settings } = useSite()
+  const pathname = usePathname()
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    const onScroll = () => {
+      const nearEnd = window.innerHeight + window.scrollY > document.documentElement.scrollHeight - 520
+      setShow(window.scrollY > window.innerHeight * 0.7 && !nearEnd)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [pathname])
+  if (!settings.bookingEnabled || /\/contact$/.test(pathname)) return null
+  const wa = waLink(settings.whatsappNumber, settings.whatsappMessage)
+  return (
+    <AnimatePresence>
+      {show && (
+        <m.div
+          className="on-dark fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-ivory/10 bg-olive-deep/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 text-ivory backdrop-blur md:hidden"
+          initial={{ y: '100%' }}
+          animate={{ y: '0%' }}
+          exit={{ y: '100%' }}
+          transition={{ duration: 0.5, ease: EASE }}
+        >
+          <SiteLink href="/contact#book" className="btn btn-light min-h-11 flex-1 px-4">Check your date</SiteLink>
+          {wa && (
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ivory/40" aria-label="Chat with us on WhatsApp">
+              <IconWhatsApp size={22} />
+            </a>
+          )}
+        </m.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 export function WhatsAppFloat() {
   const { settings } = useSite()
   const href = waLink(settings.whatsappNumber, settings.whatsappMessage)
@@ -109,7 +148,7 @@ export function WhatsAppFloat() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-5 right-5 z-40 flex h-13 w-13 items-center justify-center rounded-full border border-olive-deep/15 bg-ivory text-olive-deep shadow-[0_8px_30px_-12px_rgba(40,41,35,0.35)] transition-colors hover:bg-olive-deep hover:text-ivory md:bottom-8 md:right-8"
+      className="fixed bottom-5 right-5 z-40 hidden h-13 w-13 items-center justify-center rounded-full border border-olive-deep/15 bg-ivory text-olive-deep shadow-[0_8px_30px_-12px_rgba(40,41,35,0.35)] transition-colors hover:bg-olive-deep hover:text-ivory md:bottom-8 md:right-8 md:flex"
       aria-label="Chat with us on WhatsApp"
     >
       <IconWhatsApp size={24} />

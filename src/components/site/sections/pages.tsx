@@ -21,6 +21,30 @@ import { StoryCard } from './home'
 
 export function PageIntro({ s, first }: { s: PageIntroSection; first: boolean }) {
   const Heading = first ? 'h1' : 'h2'
+  if (s.layout === 'side' && s.media) {
+    return (
+      <section className={first ? 'pb-10 pt-32 md:pb-16 md:pt-44' : 'section-y'}>
+        <div className="shell grid items-end gap-12 md:grid-cols-12 md:gap-8">
+          <div className="md:col-span-7 md:pb-6">
+            {s.eyebrow && <Reveal><p className="kicker mb-8">{s.eyebrow}</p></Reveal>}
+            <MaskedText as={Heading} text={s.headline} onMount={first} delay={first ? 0.15 : 0} className="display display-xl text-olive-deep" />
+            {s.body && (
+              <Reveal delay={0.35} className="mt-10 max-w-xl md:mt-12">
+                <Paragraphs text={s.body} className="lede" />
+              </Reveal>
+            )}
+          </div>
+          <div className="ml-auto w-[78%] md:col-span-5 md:col-start-8 md:w-full">
+            <ImageReveal className="aspect-[4/5]" onMount={first} delay={first ? 0.3 : 0}>
+              <Parallax className="h-full w-full" amount={5}>
+                <SmartImage media={s.media} priority={first} sizes="(min-width: 768px) 40vw, 80vw" />
+              </Parallax>
+            </ImageReveal>
+          </div>
+        </div>
+      </section>
+    )
+  }
   return (
     <section className={first ? 'pt-36 md:pt-52' : 'section-y'}>
       <div className="shell">

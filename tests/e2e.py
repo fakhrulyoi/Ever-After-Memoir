@@ -248,21 +248,69 @@ with sync_playwright() as p:
     def t14():
         ctx, page = new_page(browser, viewport={'width': 390, 'height': 900})
         page.goto(f'{BASE}/contact')
-        page.get_by_role('button', name='Send inquiry').click()
-        expect(page.get_by_text('Please tell us your name')).to_be_visible()
-        page.get_by_label('Your name').fill(couple)
-        page.get_by_label('Email').fill(f'couple{stamp}@test.local')
-        page.get_by_label('Wedding date').fill('2030-06-15')
-        page.get_by_label('Location or venue').fill('Kuantan')
-        page.get_by_label('Type of celebration').select_option(index=1)
-        page.get_by_label('Service you’re interested in').select_option(index=1)
-        page.get_by_label('Tell us about your day').fill('Hello from the automated test.')
-        page.get_by_role('checkbox').check()
+        form = page.locator('#inquiry')
+        form.get_by_role('button', name='Send inquiry').click()
+        expect(form.get_by_text('Please tell us your name')).to_be_visible()
+        form.get_by_label('Your name').fill(couple)
+        form.get_by_label('Email').fill(f'couple{stamp}@test.local')
+        form.get_by_label('Wedding date').fill('2030-06-15')
+        form.get_by_label('Location or venue').fill('Kuantan')
+        form.get_by_label('Type of celebration').select_option(index=1)
+        form.get_by_label('Service you’re interested in').select_option(index=1)
+        form.get_by_label('Tell us about your day').fill('Hello from the automated test.')
+        form.get_by_role('checkbox').check()
         page.wait_for_timeout(3200)
-        page.get_by_role('button', name='Send inquiry').click()
+        form.get_by_role('button', name='Send inquiry').click()
         expect(page.get_by_text('we have your message')).to_be_visible(timeout=15000)
         ctx.close()
     check('14 Public inquiry form validates and submits', t14)
+
+    # 14b. Booking calendar -> WhatsApp, and the admin availability screen
+    booker = f'E2E Booker {stamp}'
+    def t14b():
+        ctx, page = new_page(browser, viewport={'width': 1280, 'height': 900})
+        wa = []
+        ctx.route('https://wa.me/**', lambda route: (wa.append(route.request.url), route.fulfill(status=200, body='whatsapp')))
+        page.goto(f'{BASE}/contact#book')
+        cal = page.locator('#book')
+        day = cal.locator('[data-day]:not([disabled])').first
+        expect(day).to_be_visible()
+        picked = day.get_attribute('data-day')
+        day.click()
+        cal.get_by_role('button', name='Continue on WhatsApp').click()
+        expect(cal.get_by_text('Please tell us your name')).to_be_visible()
+        page.locator('#bk-fullName').fill(booker)
+        page.locator('#bk-celebrationType').select_option(index=1)
+        page.locator('#bk-serviceInterest').select_option(index=1)
+        page.locator('#bk-location').fill('Kuantan')
+        cal.locator('input[name=consent]').check()
+        page.wait_for_timeout(2700)
+        cal.get_by_role('button', name='Continue on WhatsApp').click()
+        page.wait_for_url('https://wa.me/**', timeout=15000)
+        assert wa and 'text=' in wa[0], 'no WhatsApp redirect'
+        ctx.close()
+        # Owner marks it booked; the public calendar then shows that date as booked
+        admin.goto(f'{BASE}/admin/inquiries')
+        admin.get_by_role('link', name=re.compile(booker)).click()
+        admin.locator('#inq-status').select_option('booked')
+        expect(admin.get_by_text(re.compile('closed on your booking calendar'))).to_be_visible()
+        ctx2, pub = new_page(browser, viewport={'width': 1280, 'height': 900})
+        pub.goto(f'{BASE}/contact?date={picked}#book')
+        btn = pub.locator(f'[data-day="{picked}"]')
+        expect(btn).to_be_disabled()
+        assert 'booked' in (btn.get_attribute('aria-label') or '').lower()
+        ctx2.close()
+        # Re-open the date from the admin calendar so reruns stay clean
+        admin.goto(f'{BASE}/admin/availability')
+        target = admin.locator(f'[data-admin-day="{picked}"]')
+        for _ in range(24):
+            if target.count():
+                break
+            admin.get_by_role('button', name='Next months').click()
+        target.click()
+        admin.get_by_role('button', name='Available', exact=True).click()
+        expect(admin.get_by_text(re.compile('marked available'))).to_be_visible()
+    check('14b Booking calendar sends the couple to WhatsApp; booked dates close', t14b)
 
     def t15():
         admin.goto(f'{BASE}/admin/inquiries')

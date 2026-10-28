@@ -1,22 +1,14 @@
-import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { fieldErrors, inquirySchema } from '@/lib/inquiry'
 import { createServiceClient } from '@/lib/supabase/service'
+import { ipHash, overLimit, recordHit } from '@/lib/ratelimit'
+import { notifyOwner } from '@/lib/notify'
 import { SITE_URL } from '@/lib/env'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const MAX_PER_HOUR = 5
 const MIN_FILL_MS = 3000
-
-function clientIp(req: NextRequest) {
-  return (
-    req.headers.get('x-real-ip') ||
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    'unknown'
-  )
-}
 
 const json = (body: object, status = 200) =>
   NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
@@ -51,21 +43,10 @@ export async function POST(req: NextRequest) {
   if (!supabase) {
     return json({ ok: false, error: 'The inquiry form is not connected yet. Please contact us on Instagram or TikTok for now.' }, 503)
   }
-
-  const salt = process.env.INQUIRY_IP_SALT || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  const ipHash = createHash('sha256').update(`${salt}:${clientIp(req)}`).digest('hex')
-
-  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-  const { count, error: countError } = await supabase
-    .from('inquiry_rate_limits')
-    .select('id', { count: 'exact', head: true })
-    .eq('ip_hash', ipHash)
-    .gte('created_at', since)
-  if (countError) {
-    console.error('rate limit check failed', countError.message)
-    return json({ ok: false, error: 'Your inquiry was not sent. Please try again in a few minutes.' }, 500)
-  }
-  if ((count ?? 0) >= MAX_PER_HOUR) {
+  const hash = ipHash(req)
+  const limited = await overLimit(supabase, hash)
+  if (limited === 'error') return json({ ok: false, error: 'Your inquiry was not sent. Please try again in a few minutes.' }, 500)
+  if (limited) {
     return json({ ok: false, error: 'You have sent several inquiries already. Please wait an hour, or message us on Instagram.' }, 429)
   }
 
@@ -83,7 +64,7 @@ export async function POST(req: NextRequest) {
       budget: d.budget,
       notes: d.notes,
       consent: d.consent,
-      ip_hash: ipHash,
+      ip_hash: hash,
     })
     .select('id')
     .single()
@@ -93,40 +74,22 @@ export async function POST(req: NextRequest) {
     return json({ ok: false, error: 'Your inquiry was not sent. Please try again in a few minutes.' }, 500)
   }
 
-  await supabase.from('inquiry_rate_limits').insert({ ip_hash: ipHash })
-  // Housekeeping: forget rate-limit entries older than a day
-  await supabase.from('inquiry_rate_limits').delete().lt('created_at', new Date(Date.now() - 86400000).toISOString())
+  await recordHit(supabase, hash)
 
-  await notifyOwner(d, row.id).catch((e) => console.error('notification email failed', e))
+  await notifyOwner(
+    {
+      Name: d.fullName,
+      Partner: d.partnerName,
+      Email: d.email,
+      WhatsApp: d.whatsapp,
+      'Wedding date': d.weddingDate,
+      Location: d.location,
+      Celebration: d.celebrationType,
+      Service: d.serviceInterest,
+      Budget: d.budget,
+      Notes: d.notes,
+    },
+    { id: row.id, subject: `New inquiry — ${d.fullName} (${d.weddingDate})`, replyTo: d.email },
+  ).catch((e) => console.error('notification email failed', e))
   return json({ ok: true })
-}
-
-async function notifyOwner(d: ReturnType<typeof inquirySchema.parse>, id: string) {
-  const key = process.env.RESEND_API_KEY
-  const to = process.env.INQUIRY_NOTIFY_EMAIL
-  const from = process.env.RESEND_FROM || 'Ever After Memoir <onboarding@resend.dev>'
-  if (!key || !to) return
-  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
-  const rows: [string, string][] = [
-    ['Name', d.fullName],
-    ['Partner', d.partnerName],
-    ['Email', d.email],
-    ['WhatsApp', d.whatsapp],
-    ['Wedding date', d.weddingDate],
-    ['Location', d.location],
-    ['Celebration', d.celebrationType],
-    ['Service', d.serviceInterest],
-    ['Budget', d.budget],
-    ['Notes', d.notes],
-  ]
-  const html = `<div style="font-family:Georgia,serif;color:#282923"><h2 style="font-weight:400">New wedding inquiry</h2><table cellpadding="6">${rows
-    .filter(([, v]) => v)
-    .map(([k, v]) => `<tr><td style="color:#606B4F;vertical-align:top">${k}</td><td>${esc(v).replace(/\n/g, '<br>')}</td></tr>`)
-    .join('')}</table><p><a href="${SITE_URL}/admin/inquiries/${id}">Open in admin</a></p></div>`
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: [to], reply_to: d.email, subject: `New inquiry — ${d.fullName} (${d.weddingDate})`, html }),
-  })
-  if (!res.ok) throw new Error(`Resend responded ${res.status}`)
 }

@@ -85,7 +85,7 @@ export function Nav({ overHero }: { overHero: boolean }) {
               <li key={l.href}>
                 <SiteLink
                   href={l.href}
-                  className="group relative py-2 text-[0.8125rem] font-medium tracking-[0.04em]"
+                  className="group relative py-2 text-[0.9375rem] font-medium tracking-[0.02em]"
                   aria-current={current === l.href || current.startsWith(`${l.href}/`) ? 'page' : undefined}
                 >
                   {l.label}
@@ -101,7 +101,7 @@ export function Nav({ overHero }: { overHero: boolean }) {
           <div className="relative z-10 flex items-center gap-3">
             <div className="hidden md:block">
               <Magnetic>
-                <SiteLink href="/contact" className={`btn min-h-11 px-5 ${light ? 'btn-light' : 'btn-dark'}`}>
+                <SiteLink href="/contact#book" className={`btn min-h-11 px-5 ${light ? 'btn-light' : 'btn-dark'}`}>
                   Let&rsquo;s create your memoir
                 </SiteLink>
               </Magnetic>
@@ -152,7 +152,7 @@ export function Nav({ overHero }: { overHero: boolean }) {
               ))}
             </ul>
             <div className="shell flex items-center justify-between gap-4 pb-10">
-              <SiteLink href="/contact" className="btn btn-light min-h-12 px-5">
+              <SiteLink href="/contact#book" className="btn btn-light min-h-12 px-5">
                 Let&rsquo;s create your memoir
               </SiteLink>
               <div className="flex gap-4">

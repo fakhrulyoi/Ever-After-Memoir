@@ -59,6 +59,7 @@ export interface InquiryRow {
   budget: string
   notes: string
   status: 'new' | 'contacted' | 'booked' | 'closed'
+  source: 'form' | 'booking'
   created_at: string
   updated_at: string
 }
@@ -68,7 +69,7 @@ export async function listInquiries(): Promise<InquiryRow[]> {
   const sb = await createSupabaseServer()
   const { data, error } = await sb
     .from('inquiries')
-    .select('id, full_name, partner_name, email, whatsapp, wedding_date, location, celebration_type, service_interest, budget, notes, status, created_at, updated_at')
+    .select('id, full_name, partner_name, email, whatsapp, wedding_date, location, celebration_type, service_interest, budget, notes, status, source, created_at, updated_at')
     .order('created_at', { ascending: false })
     .limit(2000)
   if (error) throw new Error(error.message)
@@ -94,12 +95,13 @@ export async function overviewCounts() {
     const { count: c } = await q
     return c ?? 0
   }
-  const [newInquiries, publishedStories, draftStories, media, samplesLive] = await Promise.all([
+  const [newInquiries, publishedStories, draftStories, media, samplesLive, markedDates] = await Promise.all([
     count('inquiries', (q) => q.eq('status', 'new')),
     count('stories', (q) => q.eq('status', 'published')),
     count('stories', (q) => q.eq('status', 'draft')),
     count('media_assets'),
     count('stories', (q) => q.eq('status', 'published').eq('published->>isSample', 'true')),
+    count('availability'),
   ])
-  return { newInquiries, publishedStories, draftStories, media, samplesLive }
+  return { newInquiries, publishedStories, draftStories, media, samplesLive, markedDates }
 }

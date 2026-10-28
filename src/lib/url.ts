@@ -9,9 +9,9 @@ export function isSafeHref(href: string) {
 
 const STORAGE_PREFIX = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/`
 
-/** Media URLs: bundled samples, https files, or files in your Supabase storage. */
+/** Media URLs: bundled files (/brand, /samples), https files, or files in your Supabase storage. */
 export function isSafeMediaUrl(url: string) {
-  return url.startsWith('/samples/') || /^https:\/\//i.test(url) || (STORAGE_PREFIX.length > 30 && url.startsWith(STORAGE_PREFIX))
+  return url.startsWith('/samples/') || url.startsWith('/brand/') || /^https:\/\//i.test(url) || (STORAGE_PREFIX.length > 30 && url.startsWith(STORAGE_PREFIX))
 }
 
 export const isExternal = (href: string) => /^(https?:|mailto:|tel:)/i.test(href)

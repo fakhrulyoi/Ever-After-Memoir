@@ -18,6 +18,8 @@ export type FieldDef =
   | { kind: 'stories'; key: string; label: string; help?: string }
   | { kind: 'reels'; key: string; label: string; help?: string }
   | { kind: 'gallery'; key: string; label: string; help?: string }
+  | { kind: 'slides'; key: string; label: string; help?: string; max: number }
+  | { kind: 'collage'; key: string; label: string; help?: string }
   | { kind: 'heading'; label: string; help?: string }
 
 const HEADLINE_HELP = 'Press Enter for a new line. Wrap words in *stars* to make them italic.'
@@ -53,13 +55,24 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
     pages: ['home'],
     single: true,
     fields: [
+      {
+        kind: 'select',
+        key: 'layout',
+        label: 'Style',
+        options: [
+          { value: 'reel', label: 'Reel — photos change one after another, like a story' },
+          { value: 'full', label: 'Full screen — one photo or a silent video behind the text' },
+        ],
+      },
       eyebrow,
       headline('Headline'),
       { kind: 'textarea', key: 'body', label: 'Short introduction', rows: 3, max: 500 },
-      image('media', 'Image'),
-      { kind: 'media', key: 'video', label: 'Background video (optional)', accept: 'video', help: 'Plays silently on a loop. Leave empty to show only the image.' },
-      { kind: 'focal', key: 'focal', label: 'Focus point', mediaKey: 'media', help: 'Click the part of the image that must always stay visible on phones.' },
-      { kind: 'range', key: 'overlay', label: 'Darken image for readability', min: 0, max: 0.8, step: 0.02, percent: true },
+      { kind: 'slides', key: 'slides', label: 'Reel photos', max: 10, help: 'For the Reel style. Portrait photos at least 1000 px wide look best. Drag to change the order.' },
+      { kind: 'range', key: 'interval', label: 'Seconds per photo', min: 2, max: 12, step: 1 },
+      image('media', 'Full-screen photo'),
+      { kind: 'media', key: 'video', label: 'Full-screen background video (optional)', accept: 'video', help: 'For the Full screen style. Plays silently on a loop.' },
+      { kind: 'focal', key: 'focal', label: 'Focus point', mediaKey: 'media', help: 'Click the part of the photo that must always stay visible on phones.' },
+      { kind: 'range', key: 'overlay', label: 'Darken photo for readability', min: 0, max: 0.8, step: 0.02, percent: true },
       { kind: 'link', key: 'primary', label: 'Main button' },
       { kind: 'link', key: 'secondary', label: 'Second link' },
       { kind: 'toggle', key: 'showTimecode', label: 'Show the running film timecode' },
@@ -136,7 +149,21 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
     label: 'Page introduction',
     description: 'The page title, a short introduction and an optional wide image.',
     pages: ['stories', 'services', 'about'],
-    fields: [eyebrow, headline(), body('Introduction', 3), { kind: 'media', key: 'media', label: 'Wide image (optional)', accept: 'image' }],
+    fields: [
+      {
+        kind: 'select',
+        key: 'layout',
+        label: 'Photo position',
+        options: [
+          { value: 'side', label: 'Portrait photo beside the title' },
+          { value: 'wide', label: 'Wide photo under the title' },
+        ],
+      },
+      eyebrow,
+      headline(),
+      body('Introduction', 3),
+      { kind: 'media', key: 'media', label: 'Photo (optional)', accept: 'image' },
+    ],
   },
   text_image: {
     label: 'Text with image',
@@ -200,6 +227,41 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
         rows: 18,
         help: 'Start a line with “## ” for a sub-heading. Links: [label](https://address). Leave an empty line between paragraphs.',
       },
+    ],
+  },
+  image_break: {
+    label: 'Full-width photo',
+    description: 'A large photo across the whole screen, with an optional line of text.',
+    pages: ['home', 'about', 'services', 'stories'],
+    fields: [
+      image('media', 'Photo'),
+      { kind: 'focal', key: 'focal', label: 'Focus point', mediaKey: 'media' },
+      { kind: 'headline', key: 'quote', label: 'Text on the photo (optional)', help: HEADLINE_HELP, max: 200 },
+      { kind: 'text', key: 'caption', label: 'Small caption (optional)' },
+    ],
+  },
+  collage: {
+    label: 'Photo collage',
+    description: 'Three to five photos arranged like an editorial spread. They move at different speeds as you scroll.',
+    pages: ['home', 'about', 'stories', 'services'],
+    fields: [
+      eyebrow,
+      headline(),
+      { kind: 'textarea', key: 'body', label: 'Short text', rows: 2 },
+      { kind: 'collage', key: 'items', label: 'Photos' },
+      { kind: 'link', key: 'link', label: 'Link' },
+    ],
+  },
+  booking: {
+    label: 'Booking calendar',
+    description: 'Couples pick a date, see if it is free, then continue on WhatsApp.',
+    pages: ['contact', 'home'],
+    single: true,
+    fields: [
+      eyebrow,
+      headline(),
+      { kind: 'textarea', key: 'body', label: 'Introduction', rows: 3 },
+      { kind: 'textarea', key: 'note', label: 'Small print under the calendar', rows: 2 },
     ],
   },
   quote: {
@@ -309,6 +371,17 @@ export const SETTINGS_FIELDS: FieldDef[] = [
   { kind: 'text', key: 'whatsappMessage', label: 'WhatsApp starter message' },
   { kind: 'text', key: 'instagramUrl', label: 'Instagram link' },
   { kind: 'text', key: 'tiktokUrl', label: 'TikTok link' },
+  { kind: 'heading', label: 'Booking calendar', help: 'Mark booked dates in Availability. The WhatsApp number above is where bookings are sent.' },
+  { kind: 'toggle', key: 'bookingEnabled', label: 'Let couples check dates and book on WhatsApp' },
+  { kind: 'number', key: 'bookingLeadDays', label: 'Earliest date couples can pick (days from today)', min: 0, max: 365 },
+  { kind: 'number', key: 'bookingMonthsAhead', label: 'How many months ahead the calendar shows', min: 1, max: 36 },
+  {
+    kind: 'textarea',
+    key: 'bookingMessage',
+    label: 'WhatsApp message',
+    rows: 9,
+    help: 'Filled in for the couple. Use {date} (in Malay), {date_en} (in English), {name} {partner} {type} {service} {location} {notes} {ref}. Lines with an empty value are left out.',
+  },
   { kind: 'heading', label: 'Inquiry form' },
   { kind: 'list', key: 'celebrationTypes', label: 'Types of celebration', itemLabel: 'type', max: 12 },
   { kind: 'list', key: 'budgetRanges', label: 'Budget ranges', itemLabel: 'range', max: 12, help: 'Leave empty to let couples type a budget instead.' },

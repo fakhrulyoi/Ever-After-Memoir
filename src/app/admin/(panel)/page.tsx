@@ -20,8 +20,10 @@ export default async function Overview() {
   const hero = home?.published?.sections.find((x) => x.type === 'hero') as HeroSection | undefined
   const checklist = [
     { done: counts.samplesLive === 0, label: 'Replace the sample stories with real weddings', href: '/admin/stories' },
-    { done: !hero?.media?.isSample, label: 'Choose your own homepage image', href: '/admin/homepage' },
-    { done: Boolean(s?.contactEmail || s?.whatsappNumber), label: 'Add a public email or WhatsApp number', href: '/admin/settings' },
+    { done: Boolean(s?.whatsappNumber), label: 'Add your WhatsApp number so bookings open WhatsApp', href: '/admin/settings' },
+    { done: !(hero?.slides ?? []).some((x) => x.isSample) && !hero?.media?.isSample, label: 'Check the photos in the homepage reel', href: '/admin/homepage' },
+    { done: counts.markedDates > 0, label: 'Mark dates you are already booked in Availability', href: '/admin/availability' },
+    { done: !(home?.published?.sections ?? []).some((x) => x.type === 'films' && (x.film?.isSample || x.reels.some((r) => r.video?.isSample))), label: 'Replace the sample film and reels with real footage', href: '/admin/homepage' },
     { done: Boolean(process.env.RESEND_API_KEY && process.env.INQUIRY_NOTIFY_EMAIL), label: 'Turn on email alerts for new inquiries (optional, see README)' },
     { done: !SITE_URL.includes('localhost'), label: 'Set your website address (NEXT_PUBLIC_SITE_URL)' },
   ]
@@ -88,6 +90,7 @@ export default async function Overview() {
           {[
             ['/admin/homepage', 'Edit the homepage'],
             ['/admin/stories', 'Add a wedding story'],
+            ['/admin/availability', 'Mark booked dates'],
             ['/admin/media', 'Upload photos'],
             ['/preview', 'Preview the whole website'],
           ].map(([href, label]) => (

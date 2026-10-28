@@ -5,6 +5,8 @@ import type { SiteData } from '@/lib/data/site'
 import { Cta, FeaturedStories, Films, Hero, Marquee, Philosophy, ServicesPreview, Social, Testimonials } from './sections/home'
 import { Founder, PageIntro, Quote, RichTextBlock, ServicesList, StoriesGrid, TextImage } from './sections/pages'
 import { InquiryForm } from './InquiryForm'
+import { BookingCalendar } from './BookingCalendar'
+import { Collage, ImageBreak } from './sections/editorial'
 
 function SectionView({ s, data, first }: { s: Section; data: SiteData; first: boolean }) {
   switch (s.type) {
@@ -22,7 +24,10 @@ function SectionView({ s, data, first }: { s: Section; data: SiteData; first: bo
     case 'founder': return <Founder s={s} />
     case 'stories_grid': return <StoriesGrid s={s} data={data} />
     case 'services_list': return <ServicesList s={s} data={data} />
-    case 'inquiry': return <InquiryForm s={s} data={data} />
+    case 'inquiry': return <InquiryForm s={s} data={data} first={first} />
+    case 'booking': return <BookingCalendar s={s} data={data} first={first} />
+    case 'image_break': return <ImageBreak s={s} />
+    case 'collage': return <Collage s={s} />
     case 'rich_text': return <RichTextBlock s={s} first={first} />
     case 'quote': return <Quote s={s} />
     default: return null

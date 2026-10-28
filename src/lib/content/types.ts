@@ -29,6 +29,12 @@ interface SectionBase {
 
 export interface HeroSection extends SectionBase {
   type: 'hero'
+  /** reel = story-style slideshow beside the headline; full = one full-screen image or video */
+  layout: 'reel' | 'full'
+  /** Photos for the reel layout, shown one after another */
+  slides: MediaRef[]
+  /** Seconds each photo stays on screen */
+  interval: number
   eyebrow: string
   headline: string
   body: string
@@ -113,10 +119,43 @@ export interface CtaSection extends SectionBase {
 
 export interface PageIntroSection extends SectionBase {
   type: 'page_intro'
+  /** side = portrait photo beside the title; wide = wide photo under it */
+  layout: 'side' | 'wide'
   eyebrow: string
   headline: string
   body: string
   media: MediaRef | null
+}
+
+export interface ImageBreakSection extends SectionBase {
+  type: 'image_break'
+  media: MediaRef | null
+  focal: string
+  quote: string
+  caption: string
+}
+
+export interface CollageItem {
+  media: MediaRef | null
+  caption: string
+}
+
+export interface CollageSection extends SectionBase {
+  type: 'collage'
+  eyebrow: string
+  headline: string
+  body: string
+  items: CollageItem[]
+  link: LinkValue
+}
+
+export interface BookingSection extends SectionBase {
+  type: 'booking'
+  eyebrow: string
+  headline: string
+  body: string
+  /** Small print under the calendar */
+  note: string
 }
 
 export interface TextImageSection extends SectionBase {
@@ -187,6 +226,9 @@ export type Section =
   | InquirySection
   | RichTextSection
   | QuoteSection
+  | ImageBreakSection
+  | CollageSection
+  | BookingSection
 
 export type SectionType = Section['type']
 
@@ -201,8 +243,10 @@ export type PageSlug = 'home' | 'stories' | 'services' | 'about' | 'contact' | '
 
 export interface GalleryItem {
   media: MediaRef | null
+  /** For a chapter, this is the chapter title */
   caption: string
-  layout: 'full' | 'half' | 'offset'
+  /** chapter = a heading that starts a new part of the story (no photo) */
+  layout: 'full' | 'half' | 'offset' | 'chapter'
 }
 
 export interface StoryContent {
@@ -269,6 +313,20 @@ export interface SettingsContent {
   celebrationTypes: string[]
   budgetRanges: string[]
   inquiryRetentionMonths: number
+  bookingEnabled: boolean
+  /** Earliest date couples can choose, in days from today */
+  bookingLeadDays: number
+  /** How far ahead the calendar goes */
+  bookingMonthsAhead: number
+  /** WhatsApp message. Placeholders: {date} {date_en} {name} {partner} {type} {service} {location} {notes} {ref} */
+  bookingMessage: string
+}
+
+export type AvailabilityStatus = 'booked' | 'limited' | 'unavailable'
+
+export interface AvailabilityDay {
+  day: string
+  status: AvailabilityStatus
 }
 
 export type ContentTable = 'pages' | 'stories' | 'services' | 'testimonials' | 'social_items' | 'site_settings'

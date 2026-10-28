@@ -1,6 +1,7 @@
 // Starter content. Used to seed the database and as a fallback when the
 // database is not connected yet. Everything here is editable in /admin.
-// Sample images are original abstract placeholders — not client work.
+// Photos in /public/brand are Ever After Memoir's own work. The film and reels
+// are slideshows made from those photos — replace them with real footage.
 
 import type {
   MediaRef,
@@ -14,7 +15,7 @@ import type {
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 
-interface SampleFile {
+interface MediaFile {
   id: string
   file: string
   type: 'image' | 'video'
@@ -22,63 +23,65 @@ interface SampleFile {
   height: number
   alt: string
   poster?: string
+  /** true for placeholder files the owner should replace */
+  isSample: boolean
 }
 
-export const SAMPLE_FILES: SampleFile[] = [
-  { id: uuid(1), file: 'hero.jpg', type: 'image', width: 2400, height: 1350, alt: 'Soft golden light falling across a quiet room (sample image)' },
-  { id: uuid(2), file: 'philosophy.jpg', type: 'image', width: 1200, height: 1500, alt: 'Ivory fabric moving in window light (sample image)' },
-  { id: uuid(3), file: 'story-1.jpg', type: 'image', width: 1600, height: 2000, alt: 'Warm evening haze (sample image)' },
-  { id: uuid(4), file: 'story-1-b.jpg', type: 'image', width: 1800, height: 1200, alt: 'String lights out of focus (sample image)' },
-  { id: uuid(5), file: 'story-1-c.jpg', type: 'image', width: 1200, height: 1500, alt: 'Folds of cream linen (sample image)' },
-  { id: uuid(6), file: 'story-2.jpg', type: 'image', width: 1800, height: 1200, alt: 'A green garden blurred in afternoon sun (sample image)' },
-  { id: uuid(7), file: 'story-2-b.jpg', type: 'image', width: 1200, height: 1500, alt: 'Light through a sheer veil (sample image)' },
-  { id: uuid(8), file: 'story-2-c.jpg', type: 'image', width: 1500, height: 1500, alt: 'Blush petals out of focus (sample image)' },
-  { id: uuid(9), file: 'story-3.jpg', type: 'image', width: 1200, height: 1500, alt: 'Candlelight glowing in the dark (sample image)' },
-  { id: uuid(10), file: 'story-3-b.jpg', type: 'image', width: 1800, height: 1200, alt: 'Fairy lights at night (sample image)' },
-  { id: uuid(11), file: 'story-4.jpg', type: 'image', width: 1600, height: 2000, alt: 'Blush and ivory tones in soft focus (sample image)' },
-  { id: uuid(12), file: 'story-4-b.jpg', type: 'image', width: 1200, height: 1500, alt: 'Olive leaves in soft focus (sample image)' },
-  { id: uuid(13), file: 'about.jpg', type: 'image', width: 1400, height: 1750, alt: 'Linen in morning light (sample image)' },
-  { id: uuid(14), file: 'service-1.jpg', type: 'image', width: 1200, height: 1500, alt: 'Sheer fabric in daylight (sample image)' },
-  { id: uuid(15), file: 'service-2.jpg', type: 'image', width: 1200, height: 1500, alt: 'Warm lights at an evening reception (sample image)' },
-  { id: uuid(16), file: 'service-3.jpg', type: 'image', width: 1200, height: 1500, alt: 'Greenery in soft focus (sample image)' },
-  { id: uuid(17), file: 'social-1.jpg', type: 'image', width: 1080, height: 1350, alt: 'Sample social preview' },
-  { id: uuid(18), file: 'social-2.jpg', type: 'image', width: 1080, height: 1350, alt: 'Sample social preview' },
-  { id: uuid(19), file: 'social-3.jpg', type: 'image', width: 1080, height: 1350, alt: 'Sample social preview' },
-  { id: uuid(20), file: 'social-4.jpg', type: 'image', width: 1080, height: 1350, alt: 'Sample social preview' },
-  { id: uuid(21), file: 'social-5.jpg', type: 'image', width: 1080, height: 1350, alt: 'Sample social preview' },
-  { id: uuid(22), file: 'social-6.jpg', type: 'image', width: 1080, height: 1350, alt: 'Sample social preview' },
-  { id: uuid(23), file: 'film-poster.jpg', type: 'image', width: 1920, height: 1080, alt: 'Poster frame for the sample film' },
-  { id: uuid(24), file: 'reel-1.jpg', type: 'image', width: 720, height: 1280, alt: 'Poster frame for a sample reel' },
-  { id: uuid(25), file: 'reel-2.jpg', type: 'image', width: 720, height: 1280, alt: 'Poster frame for a sample reel' },
-  { id: uuid(26), file: 'reel-3.jpg', type: 'image', width: 720, height: 1280, alt: 'Poster frame for a sample reel' },
-  { id: uuid(27), file: 'og.jpg', type: 'image', width: 1200, height: 630, alt: 'Ever After Memoir sharing image (sample)' },
-  { id: uuid(28), file: 'hero-loop.mp4', type: 'video', width: 1600, height: 900, alt: 'Slow drifting golden light (sample video)', poster: 'hero.jpg' },
-  { id: uuid(29), file: 'film.mp4', type: 'video', width: 1280, height: 720, alt: 'Sample highlight film', poster: 'film-poster.jpg' },
-  { id: uuid(30), file: 'reel-1.mp4', type: 'video', width: 540, height: 960, alt: 'Sample vertical reel', poster: 'reel-1.jpg' },
-  { id: uuid(31), file: 'reel-2.mp4', type: 'video', width: 540, height: 960, alt: 'Sample vertical reel', poster: 'reel-2.jpg' },
-  { id: uuid(32), file: 'reel-3.mp4', type: 'video', width: 540, height: 960, alt: 'Sample vertical reel', poster: 'reel-3.jpg' },
+export const MEDIA_FILES: MediaFile[] = [
+  { id: uuid(1), file: 'bride-salam.jpg', type: 'image', width: 1140, height: 1215, alt: 'Bride smiling as the groom rests his hand on her head after the akad nikah', isSample: false },
+  { id: uuid(2), file: 'rings-henna.jpg', type: 'image', width: 1169, height: 1215, alt: 'The couple’s hands with wedding rings and floral henna', isSample: false },
+  { id: uuid(3), file: 'holding-hands.jpg', type: 'image', width: 882, height: 1181, alt: 'Bride and groom in white holding hands, bouquet of pink flowers', isSample: false },
+  { id: uuid(4), file: 'family-portrait.jpg', type: 'image', width: 853, height: 1223, alt: 'Family in white baju Melayu and wedding dresses laughing together', isSample: false },
+  { id: uuid(5), file: 'bride-smile.jpg', type: 'image', width: 462, height: 1089, alt: 'Bride in a tiara and veil smiling', isSample: false },
+  { id: uuid(6), file: 'couple-standing.jpg', type: 'image', width: 441, height: 1088, alt: 'Newlyweds standing together and smiling', isSample: false },
+  { id: uuid(7), file: 'salam-closeup.jpg', type: 'image', width: 424, height: 532, alt: 'Bride kissing the groom’s hand, eyes closed', isSample: false },
+  { id: uuid(8), file: 'pelamin-wide.jpg', type: 'image', width: 423, height: 532, alt: 'Couple seated on the pelamin surrounded by white flowers', isSample: false },
+  { id: uuid(9), file: 'pelamin-laugh.jpg', type: 'image', width: 424, height: 533, alt: 'Groom and bride sharing a laugh on the pelamin', isSample: false },
+  { id: uuid(10), file: 'rings-detail.jpg', type: 'image', width: 423, height: 533, alt: 'Close-up of the rings and henna', isSample: false },
+  { id: uuid(11), file: 'film-poster.jpg', type: 'image', width: 1280, height: 720, alt: 'Cover frame of the highlight film', isSample: false },
+  { id: uuid(12), file: 'reel-1-poster.jpg', type: 'image', width: 720, height: 1280, alt: 'Cover frame of a reel', isSample: false },
+  { id: uuid(13), file: 'reel-2-poster.jpg', type: 'image', width: 720, height: 1280, alt: 'Cover frame of a reel', isSample: false },
+  { id: uuid(14), file: 'reel-3-poster.jpg', type: 'image', width: 720, height: 1280, alt: 'Cover frame of a reel', isSample: false },
+  { id: uuid(15), file: 'og.jpg', type: 'image', width: 1200, height: 630, alt: 'Ever After Memoir', isSample: false },
+  { id: uuid(28), file: 'film.mp4', type: 'video', width: 1280, height: 720, alt: 'Sample highlight film made from photos', poster: 'film-poster.jpg', isSample: true },
+  { id: uuid(30), file: 'reel-1.mp4', type: 'video', width: 720, height: 1280, alt: 'Sample reel made from photos', poster: 'reel-1-poster.jpg', isSample: true },
+  { id: uuid(31), file: 'reel-2.mp4', type: 'video', width: 720, height: 1280, alt: 'Sample reel made from photos', poster: 'reel-2-poster.jpg', isSample: true },
+  { id: uuid(32), file: 'reel-3.mp4', type: 'video', width: 720, height: 1280, alt: 'Sample reel made from photos', poster: 'reel-3-poster.jpg', isSample: true },
 ]
 
-export const sampleUrl = (file: string) => `/samples/${file}`
+export const fileUrl = (file: string) => `/brand/${file}`
 
 function m(file: string): MediaRef {
-  const f = SAMPLE_FILES.find((s) => s.file === file)
-  if (!f) throw new Error(`Unknown sample ${file}`)
+  const f = MEDIA_FILES.find((s) => s.file === file)
+  if (!f) throw new Error(`Unknown media file ${file}`)
   return {
     id: f.id,
-    url: sampleUrl(f.file),
+    url: fileUrl(f.file),
     type: f.type,
     alt: f.alt,
     width: f.width,
     height: f.height,
-    poster: f.poster ? sampleUrl(f.poster) : null,
-    isSample: true,
+    poster: f.poster ? fileUrl(f.poster) : null,
+    isSample: f.isSample,
   }
 }
 
 // ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
+export const DEFAULT_BOOKING_MESSAGE = [
+  'Hai Ever After Memoir! Saya nak tempah tarikh {date}.',
+  '',
+  'Nama: {name}',
+  'Pasangan: {partner}',
+  'Majlis: {type}',
+  'Servis: {service}',
+  'Lokasi: {location}',
+  'Nota: {notes}',
+  '',
+  'Rujukan: {ref}',
+].join('\n')
+
 export const DEFAULT_SETTINGS: SettingsContent = {
   siteTitle: 'Ever After Memoir',
   tagline: 'Your day, as it felt.',
@@ -95,9 +98,13 @@ export const DEFAULT_SETTINGS: SettingsContent = {
   footerNote: 'Wedding content and little films, made for remembering.',
   filmGrain: true,
   introAnimation: true,
-  celebrationTypes: ['Solemnisation (akad nikah)', 'Reception (bersanding)', 'Solemnisation and reception', 'Engagement', 'Something else'],
+  celebrationTypes: ['Solemnisation (akad nikah)', 'Reception (bersanding)', 'Solemnisation and reception', 'Engagement (tunang)', 'Something else'],
   budgetRanges: [],
   inquiryRetentionMonths: 0,
+  bookingEnabled: true,
+  bookingLeadDays: 7,
+  bookingMonthsAhead: 18,
+  bookingMessage: DEFAULT_BOOKING_MESSAGE,
 }
 
 // ---------------------------------------------------------------------------
@@ -114,15 +121,18 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         key: 'hero',
         type: 'hero',
         visible: true,
+        layout: 'reel',
+        slides: [m('bride-salam.jpg'), m('rings-henna.jpg'), m('holding-hands.jpg'), m('family-portrait.jpg')],
+        interval: 5,
         eyebrow: 'Wedding content & little films',
         headline: 'Your day,\n*as it felt.*',
         body: 'Honest moments, fleeting details, and the beautiful in-between — thoughtfully captured, so you can relive the feeling long after the day has passed.',
-        media: m('hero.jpg'),
-        video: m('hero-loop.mp4'),
-        focal: '50% 45%',
+        media: m('bride-salam.jpg'),
+        video: null,
+        focal: '50% 30%',
         overlay: 0.28,
-        primary: { label: 'Explore our stories', href: '/stories' },
-        secondary: { label: "Let's talk about your day", href: '/contact' },
+        primary: { label: 'Check your date', href: '/contact#book' },
+        secondary: { label: 'Explore our stories', href: '/stories' },
         showTimecode: true,
       },
       {
@@ -132,7 +142,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         eyebrow: 'What we keep',
         headline: 'Not just how it looked.\n*But how it felt.*',
         body: 'The nervous laughter. The trembling hands. The little glances no one else noticed. We capture the moments that happen between the moments — the ones that make your story entirely yours.',
-        media: m('philosophy.jpg'),
+        media: m('holding-hands.jpg'),
         imageSide: 'left',
       },
       {
@@ -152,6 +162,15 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         link: { label: 'See every story', href: '/stories' },
       },
       {
+        key: 'break',
+        type: 'image_break',
+        visible: true,
+        media: m('family-portrait.jpg'),
+        focal: '50% 35%',
+        quote: 'The people who make\n*the day yours.*',
+        caption: '',
+      },
+      {
         key: 'films',
         type: 'films',
         visible: true,
@@ -160,12 +179,28 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         body: 'Your day unfolds in a thousand little moments. We bring them together in a way that lets you feel it all over again.',
         film: m('film.mp4'),
         poster: m('film-poster.jpg'),
-        filmCaption: 'Sample film — replace with your own highlight film',
+        filmCaption: 'Sample film made from our photos — replace it with a highlight film in the admin',
         reels: [
-          { video: m('reel-1.mp4'), poster: m('reel-1.jpg'), caption: 'Getting ready' },
-          { video: m('reel-2.mp4'), poster: m('reel-2.jpg'), caption: 'First look' },
-          { video: m('reel-3.mp4'), poster: m('reel-3.jpg'), caption: 'After the vows' },
+          { video: m('reel-1.mp4'), poster: m('reel-1-poster.jpg'), caption: 'After the akad' },
+          { video: m('reel-2.mp4'), poster: m('reel-2-poster.jpg'), caption: 'The little details' },
+          { video: m('reel-3.mp4'), poster: m('reel-3-poster.jpg'), caption: 'On the pelamin' },
         ],
+      },
+      {
+        key: 'collage',
+        type: 'collage',
+        visible: true,
+        eyebrow: 'In between',
+        headline: 'The moments\n*no one planned.*',
+        body: 'A kiss on the hand. A laugh on the pelamin. The rings, finally where they belong.',
+        items: [
+          { media: m('salam-closeup.jpg'), caption: 'Salam' },
+          { media: m('pelamin-laugh.jpg'), caption: '' },
+          { media: m('bride-smile.jpg'), caption: '' },
+          { media: m('rings-detail.jpg'), caption: 'Forever, on one finger' },
+          { media: m('pelamin-wide.jpg'), caption: '' },
+        ],
+        link: { label: 'See the full stories', href: '/stories' },
       },
       {
         key: 'services',
@@ -197,8 +232,8 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         type: 'cta',
         visible: true,
         headline: "Let's keep your\n*memories close.*",
-        body: 'Tell us a little about your day.',
-        link: { label: "Let's create your memoir", href: '/contact' },
+        body: 'See which dates are still open, then say hello on WhatsApp.',
+        link: { label: 'Check your date', href: '/contact#book' },
       },
     ],
   },
@@ -211,10 +246,11 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         key: 'intro',
         type: 'page_intro',
         visible: true,
+        layout: 'side',
         eyebrow: 'Our stories',
         headline: 'Every wedding\n*feels different.*',
         body: 'Some are loud and golden, some are quiet and close. Here are a few, told the way they felt.',
-        media: null,
+        media: m('couple-standing.jpg'),
       },
       { key: 'grid', type: 'stories_grid', visible: true, showFilters: true },
       {
@@ -222,8 +258,8 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         type: 'cta',
         visible: true,
         headline: 'Your story\n*could be next.*',
-        body: 'Tell us about your plans and the moments you care about most.',
-        link: { label: "Let's talk about your day", href: '/contact' },
+        body: 'See which dates are still open.',
+        link: { label: 'Check your date', href: '/contact#book' },
       },
     ],
   },
@@ -236,17 +272,18 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         key: 'intro',
         type: 'page_intro',
         visible: true,
+        layout: 'side',
         eyebrow: 'Services',
         headline: 'Made around\n*your day.*',
         body: 'Every couple remembers different things. Choose what matters most to you, and we will shape the coverage around it.',
-        media: null,
+        media: m('rings-henna.jpg'),
       },
       {
         key: 'list',
         type: 'services_list',
         visible: true,
         addonsHeadline: 'Little extras',
-        footnote: 'Every wedding is different, so every quote is too. Send an inquiry and we will reply with options for your day.',
+        footnote: 'Every wedding is different, so every quote is too. Pick your date and we will reply with options for your day.',
       },
       {
         key: 'cta',
@@ -254,7 +291,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         visible: true,
         headline: "Not sure what\n*you need?*",
         body: "Tell us about your day and we'll help you choose.",
-        link: { label: 'Send an inquiry', href: '/contact' },
+        link: { label: 'Check your date', href: '/contact#book' },
       },
     ],
   },
@@ -267,10 +304,11 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         key: 'intro',
         type: 'page_intro',
         visible: true,
+        layout: 'side',
         eyebrow: 'About',
         headline: 'Behind every memoir,\n*a thousand little feelings.*',
         body: 'Ever After Memoir was created for the moments that deserve to be remembered beyond the photographs — the laughter, the happy tears, the quiet glances, and all the beautiful in-between.',
-        media: m('about.jpg'),
+        media: m('bride-smile.jpg'),
       },
       {
         key: 'approach',
@@ -279,7 +317,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         eyebrow: 'How we work',
         headline: 'Close enough to feel it.\n*Quiet enough to miss nothing.*',
         body: 'We stay near the moments that matter and out of the way of the ones that should simply happen.\n\nThe result is content that feels like being there again — the getting ready, the vows, the people you love, and everything in between.',
-        media: m('philosophy.jpg'),
+        media: m('salam-closeup.jpg'),
         imageSide: 'right',
       },
       {
@@ -305,20 +343,29 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         visible: true,
         headline: "Let's keep your\n*memories close.*",
         body: 'We would love to hear about your day.',
-        link: { label: "Let's create your memoir", href: '/contact' },
+        link: { label: 'Check your date', href: '/contact#book' },
       },
     ],
   },
   contact: {
     title: 'Contact',
-    seoTitle: 'Contact — Ever After Memoir',
-    seoDescription: 'Tell Ever After Memoir about your wedding day, your plans and the moments you want to remember most.',
+    seoTitle: 'Book your date — Ever After Memoir',
+    seoDescription: 'Check which wedding dates are still available with Ever After Memoir, then book on WhatsApp.',
     sections: [
+      {
+        key: 'book',
+        type: 'booking',
+        visible: true,
+        eyebrow: 'Book your date',
+        headline: 'Is your date\n*still free?*',
+        body: 'Pick your wedding date to see if we’re available. Tell us a little about your day, then we’ll continue the conversation on WhatsApp.',
+        note: 'Dates marked “Few slots left” already have another booking. Your date is confirmed once we reply.',
+      },
       {
         key: 'inquiry',
         type: 'inquiry',
         visible: true,
-        headline: "Let's keep your\n*memories close.*",
+        headline: 'Prefer email?\n*Send a detailed inquiry.*',
         body: 'Tell us a little about your day, your plans, and the moments you want to remember most.',
         successHeadline: 'Thank you — *we have your message.*',
         successBody: 'We read every inquiry personally and will reply to the email you gave us.',
@@ -339,15 +386,15 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         headline: 'Privacy policy',
         body: [
           '## What we collect',
-          'When you send an inquiry, we receive the details you type into the form: your name, your partner’s name, email, WhatsApp number, wedding date, location, the type of celebration, the service you are interested in, an optional budget and any notes.',
+          'When you book a date or send an inquiry, we receive the details you type in: your name, your partner’s name, email, WhatsApp number, wedding date, location, the type of celebration, the service you are interested in, an optional budget and any notes.',
           '## Why we collect it',
-          'We use these details only to reply to you, prepare a quote and plan coverage for your wedding.',
+          'We use these details only to reply to you, prepare a quote and plan coverage for your wedding. When you book through WhatsApp, the conversation continues in WhatsApp under its own privacy terms.',
           '## Who can see it',
           'Your inquiry is stored securely and is only visible to the Ever After Memoir team. We do not sell, rent or share your details with anyone for marketing.',
           '## How long we keep it',
           'We keep inquiries for as long as we need them to work with you, and delete closed inquiries we no longer need.',
           '## Your choices',
-          'You can ask us at any time to see, correct or delete the details you sent. Reply to any email from us or send a new inquiry with your request.',
+          'You can ask us at any time to see, correct or delete the details you sent. Reply to any message from us or send a new inquiry with your request.',
           '## Cookies',
           'This website does not use advertising or tracking cookies.',
         ].join('\n\n'),
@@ -357,27 +404,30 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
 }
 
 // ---------------------------------------------------------------------------
-// Sample stories (clearly marked as samples)
+// Example stories — real photos, example text (marked as samples until edited)
 // ---------------------------------------------------------------------------
+const SAMPLE_NOTE =
+  'This story uses real photos with example words. Rewrite it in Admin → Stories with the couple’s own story, or replace it with a new wedding.'
+
 export const DEFAULT_STORIES: (StoryContent & { id: string })[] = [
   {
     id: uuid(101),
     title: 'A Day to Remember',
     slug: 'a-day-to-remember',
-    excerpt: 'Golden light, slow mornings and a room full of the people who matter.',
-    description:
-      'This is a sample story that shows how a wedding story will look. Replace the words, images and films with a real wedding in Admin → Stories.',
-    cover: m('story-1.jpg'),
+    excerpt: 'Bright walls, white baju and a house full of the people who matter.',
+    description: SAMPLE_NOTE,
+    cover: m('family-portrait.jpg'),
     weddingDate: '',
     venue: '',
     location: '',
-    tags: ['Solemnisation', 'Golden hour'],
+    tags: ['Akad nikah', 'At home'],
     featured: true,
     gallery: [
-      { media: m('story-1-b.jpg'), caption: '', layout: 'full' },
-      { media: m('story-1-c.jpg'), caption: 'The quiet before.', layout: 'half' },
-      { media: m('story-2-b.jpg'), caption: '', layout: 'half' },
-      { media: m('reel-1.mp4'), caption: 'A little film from the morning.', layout: 'offset' },
+      { media: null, caption: 'Before', layout: 'chapter' },
+      { media: m('bride-smile.jpg'), caption: 'Ready.', layout: 'half' },
+      { media: m('couple-standing.jpg'), caption: '', layout: 'half' },
+      { media: null, caption: 'Everyone', layout: 'chapter' },
+      { media: m('family-portrait.jpg'), caption: 'The whole family, finally in one photo.', layout: 'offset' },
     ],
     seoTitle: '',
     seoDescription: '',
@@ -387,19 +437,23 @@ export const DEFAULT_STORIES: (StoryContent & { id: string })[] = [
     id: uuid(102),
     title: 'The Quiet Between Us',
     slug: 'the-quiet-between-us',
-    excerpt: 'An intimate garden ceremony, told through small gestures.',
-    description:
-      'This is a sample story that shows how a wedding story will look. Replace the words, images and films with a real wedding in Admin → Stories.',
-    cover: m('story-2.jpg'),
+    excerpt: 'White flowers, soft light and a kiss on the hand.',
+    description: SAMPLE_NOTE,
+    cover: m('bride-salam.jpg'),
     weddingDate: '',
     venue: '',
     location: '',
-    tags: ['Garden', 'Intimate'],
+    tags: ['Akad nikah', 'Pelamin'],
     featured: true,
     gallery: [
-      { media: m('story-2-b.jpg'), caption: '', layout: 'offset' },
-      { media: m('story-2-c.jpg'), caption: 'Petals, everywhere.', layout: 'half' },
-      { media: m('story-4-b.jpg'), caption: '', layout: 'half' },
+      { media: null, caption: 'The akad', layout: 'chapter' },
+      { media: m('salam-closeup.jpg'), caption: 'Salam.', layout: 'half' },
+      { media: m('pelamin-wide.jpg'), caption: '', layout: 'half' },
+      { media: m('bride-salam.jpg'), caption: '', layout: 'full' },
+      { media: null, caption: 'The little things', layout: 'chapter' },
+      { media: m('rings-detail.jpg'), caption: '', layout: 'half' },
+      { media: m('pelamin-laugh.jpg'), caption: 'And then, laughter.', layout: 'half' },
+      { media: m('reel-1.mp4'), caption: 'A little film from the day.', layout: 'offset' },
     ],
     seoTitle: '',
     seoDescription: '',
@@ -407,42 +461,21 @@ export const DEFAULT_STORIES: (StoryContent & { id: string })[] = [
   },
   {
     id: uuid(103),
-    title: 'In the Golden Light',
-    slug: 'in-the-golden-light',
-    excerpt: 'Candlelight, long tables and a night that nobody wanted to end.',
-    description:
-      'This is a sample story that shows how a wedding story will look. Replace the words, images and films with a real wedding in Admin → Stories.',
-    cover: m('story-3.jpg'),
-    weddingDate: '',
-    venue: '',
-    location: '',
-    tags: ['Reception', 'Evening'],
-    featured: true,
-    gallery: [
-      { media: m('story-3-b.jpg'), caption: '', layout: 'full' },
-      { media: m('reel-2.mp4'), caption: '', layout: 'offset' },
-    ],
-    seoTitle: '',
-    seoDescription: '',
-    isSample: true,
-  },
-  {
-    id: uuid(104),
     title: 'A Little Forever',
     slug: 'a-little-forever',
-    excerpt: 'Soft colours, open windows and a promise made close to home.',
-    description:
-      'This is a sample story that shows how a wedding story will look. Replace the words, images and films with a real wedding in Admin → Stories.',
-    cover: m('story-4.jpg'),
+    excerpt: 'Henna, rings and two hands that hold on a little longer.',
+    description: SAMPLE_NOTE,
+    cover: m('holding-hands.jpg'),
     weddingDate: '',
     venue: '',
     location: '',
-    tags: ['Solemnisation', 'Intimate'],
+    tags: ['Details', 'Pelamin'],
     featured: true,
     gallery: [
-      { media: m('story-4-b.jpg'), caption: '', layout: 'half' },
-      { media: m('story-1-c.jpg'), caption: '', layout: 'half' },
-      { media: m('reel-3.mp4'), caption: 'After the vows.', layout: 'offset' },
+      { media: m('rings-henna.jpg'), caption: 'Henna, still fresh.', layout: 'full' },
+      { media: m('rings-detail.jpg'), caption: '', layout: 'half' },
+      { media: m('holding-hands.jpg'), caption: '', layout: 'half' },
+      { media: m('reel-2.mp4'), caption: '', layout: 'offset' },
     ],
     seoTitle: '',
     seoDescription: '',
@@ -466,21 +499,20 @@ export const DEFAULT_SERVICES: (ServiceContent & { id: string })[] = [
     showPrice: false,
     priceNote: '',
     featured: false,
-    media: m('service-1.jpg'),
+    media: m('salam-closeup.jpg'),
   },
   {
     id: uuid(202),
     kind: 'service',
     name: 'Wedding Highlight Films',
     summary: 'Short-form storytelling that brings together the emotions, energy and memorable details of the day.',
-    description:
-      'A little film made from the moments that mattered most, so you can feel your day all over again.',
+    description: 'A little film made from the moments that mattered most, so you can feel your day all over again.',
     deliverables: [],
     price: '',
     showPrice: false,
     priceNote: '',
     featured: false,
-    media: m('service-2.jpg'),
+    media: m('reel-2-poster.jpg'),
   },
   {
     id: uuid(203),
@@ -494,17 +526,17 @@ export const DEFAULT_SERVICES: (ServiceContent & { id: string })[] = [
     showPrice: false,
     priceNote: '',
     featured: false,
-    media: m('service-3.jpg'),
+    media: m('pelamin-wide.jpg'),
   },
 ]
 
 export const DEFAULT_SOCIAL: (SocialItemContent & { id: string })[] = [
-  { id: uuid(301), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-1.jpg'), caption: 'On Instagram' },
-  { id: uuid(302), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-2.jpg'), caption: 'On TikTok' },
-  { id: uuid(303), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-3.jpg'), caption: 'On Instagram' },
-  { id: uuid(304), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-4.jpg'), caption: 'On TikTok' },
-  { id: uuid(305), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-5.jpg'), caption: 'On Instagram' },
-  { id: uuid(306), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-6.jpg'), caption: 'On TikTok' },
+  { id: uuid(301), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('reel-1-poster.jpg'), caption: 'On TikTok' },
+  { id: uuid(302), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('salam-closeup.jpg'), caption: 'On Instagram' },
+  { id: uuid(303), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('reel-2-poster.jpg'), caption: 'On TikTok' },
+  { id: uuid(304), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('pelamin-laugh.jpg'), caption: 'On Instagram' },
+  { id: uuid(305), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('reel-3-poster.jpg'), caption: 'On TikTok' },
+  { id: uuid(306), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('rings-detail.jpg'), caption: 'On Instagram' },
 ]
 
 export const DEFAULT_SETTINGS_ID = uuid(901)

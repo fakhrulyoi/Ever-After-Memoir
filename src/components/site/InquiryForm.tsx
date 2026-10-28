@@ -43,7 +43,8 @@ function Field({
   )
 }
 
-export function InquiryForm({ s, data }: { s: InquirySection; data: SiteData }) {
+export function InquiryForm({ s, data, first = true }: { s: InquirySection; data: SiteData; first?: boolean }) {
+  const Heading = first ? 'h1' : 'h2'
   const { settings, preview } = useSite()
   const [status, setStatus] = useState<Status>('idle')
   const [errors, setErrors] = useState<InquiryFieldErrors>({})
@@ -129,10 +130,10 @@ export function InquiryForm({ s, data }: { s: InquirySection; data: SiteData }) 
   })
 
   return (
-    <section className="pb-28 pt-36 md:pb-40 md:pt-48">
+    <section id="inquiry" className={first ? 'pb-28 pt-36 md:pb-40 md:pt-48' : 'scroll-mt-20 border-t border-charcoal/10 pb-28 pt-24 md:pb-40 md:pt-32'}>
       <div className="shell grid gap-16 lg:grid-cols-12">
         <div className="lg:col-span-5">
-          <h1 className="display display-lg text-olive-deep"><Rich text={s.headline} /></h1>
+          <Heading className={`display text-olive-deep ${first ? 'display-lg' : 'display-md'}`}><Rich text={s.headline} /></Heading>
           <p className="lede mt-8">{s.body}</p>
           <div className="mt-12 space-y-4 text-[0.9375rem]">
             {settings.contactEmail && (

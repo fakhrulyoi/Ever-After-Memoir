@@ -3,6 +3,7 @@ import { cache } from 'react'
 import { isSupabaseConfigured } from '../env'
 import { createPublicClient } from '../supabase/public'
 import { createSupabaseServer } from '../supabase/server'
+import { todayISO } from '../dates'
 import {
   DEFAULT_PAGES,
   DEFAULT_SERVICES,
@@ -12,6 +13,7 @@ import {
 } from '../content/defaults'
 import { normalize, type ContentFor } from '../content/schemas'
 import type {
+  AvailabilityDay,
   ContentTable,
   MediaRef,
   PageContent,
@@ -29,6 +31,8 @@ export type Source = 'published' | 'draft'
 
 export interface SiteData {
   settings: SettingsContent
+  /** Dates the owner marked (any other date is available) */
+  availability: AvailabilityDay[]
   stories: Published<StoryContent>[]
   services: Published<ServiceContent>[]
   testimonials: Published<TestimonialContent>[]
@@ -169,14 +173,29 @@ export const listSocial = cache(async (source: Source = 'published'): Promise<Pu
   return resolveMedia(toPublished('social_items', rows, source, DEFAULT_SOCIAL[0]), source)
 })
 
+/** Upcoming dates marked booked / limited / unavailable. Visitors never see the private note. */
+export const getAvailability = cache(async (source: Source = 'published'): Promise<AvailabilityDay[]> => {
+  if (!isSupabaseConfigured) return []
+  const sb = await client(source)
+  const { data, error } = await sb
+    .from('availability')
+    .select('day, status')
+    .gte('day', todayISO())
+    .order('day', { ascending: true })
+    .limit(2000)
+  if (error) throw new Error(`Could not load availability: ${error.message}`)
+  return (data ?? []) as AvailabilityDay[]
+})
+
 /** Everything a page needs to render its sections. */
 export const getSiteData = cache(async (source: Source = 'published'): Promise<SiteData> => {
-  const [settings, stories, services, testimonials, social] = await Promise.all([
+  const [settings, stories, services, testimonials, social, availability] = await Promise.all([
     getSettings(source),
     listStories(source),
     listServices(source),
     listTestimonials(source),
     listSocial(source),
+    getAvailability(source),
   ])
-  return { settings, stories, services, testimonials, social }
+  return { settings, stories, services, testimonials, social, availability }
 })

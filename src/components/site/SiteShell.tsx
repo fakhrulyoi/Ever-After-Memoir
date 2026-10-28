@@ -6,7 +6,7 @@ import { MotionProvider } from '../motion/MotionProvider'
 import { SiteProvider } from './context'
 import { Nav } from './Nav'
 import { Footer } from './Footer'
-import { Grain, Intro, ViewCursor, WhatsAppFloat } from './Chrome'
+import { Grain, Intro, MobileBookBar, ViewCursor, WhatsAppFloat } from './Chrome'
 import { PreviewBanner } from './PreviewBanner'
 
 /** Pages whose first section is a full-bleed image (nav starts transparent). */
@@ -42,6 +42,7 @@ export function SiteShell({
         <ViewCursor />
         <Intro />
         {!preview && <WhatsAppFloat />}
+        <MobileBookBar />
         {preview && <PreviewBanner />}
       </MotionProvider>
     </SiteProvider>

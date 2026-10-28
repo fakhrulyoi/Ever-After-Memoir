@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
-const today = () => new Date().toISOString().slice(0, 10)
+import { todayISO } from './dates'
+
+const today = () => todayISO()
 
 /** Shared by the contact form (browser) and the API route (server). */
 export const inquirySchema = z.object({

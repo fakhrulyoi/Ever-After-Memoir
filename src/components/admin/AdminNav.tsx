@@ -14,6 +14,7 @@ const LINKS = [
   { href: '/admin/media', label: 'Media library' },
   { href: '/admin/testimonials', label: 'Testimonials' },
   { href: '/admin/inquiries', label: 'Inquiries' },
+  { href: '/admin/availability', label: 'Availability' },
   { href: '/admin/social', label: 'Social' },
   { href: '/admin/settings', label: 'Settings & SEO' },
   { href: '/admin/account', label: 'Account' },

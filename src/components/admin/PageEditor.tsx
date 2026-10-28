@@ -6,6 +6,7 @@ import type { ContentStatus, PageContent, PageSlug, Section, SectionType } from 
 import { EditorShell } from './EditorShell'
 import { FormContextProvider, SchemaForm, type FormContextValue } from './FormFields'
 import { Button, Confirm, inputClass } from './ui'
+import { dragClasses, useDragSort } from './useDragSort'
 
 type Device = 'phone' | 'tablet' | 'desktop'
 const WIDTH: Record<Device, number> = { phone: 390, tablet: 820, desktop: 1440 }
@@ -80,7 +81,50 @@ function LivePreview({ path, slug, content }: { path: string; slug: string; cont
   )
 }
 
+function SectionList({
+  slug,
+  sections,
+  open,
+  setOpen,
+  setSections,
+  onRemove,
+}: {
+  slug: string
+  sections: Section[]
+  open: string | null
+  setOpen: (k: string | null) => void
+  setSections: (s: Section[]) => void
+  onRemove: (i: number) => void
+}) {
+  const { itemProps } = useDragSort(sections, setSections)
+  return (
+    <ol className="space-y-2">
+      {sections.map((s, i) => (
+        <SectionCard
+          key={s.key}
+          slug={slug}
+          section={s}
+          index={i}
+          count={sections.length}
+          open={open === s.key}
+          dragProps={itemProps(i)}
+          onToggleOpen={() => setOpen(open === s.key ? null : s.key)}
+          onChange={(next) => setSections(sections.map((x, k) => (k === i ? next : x)))}
+          onMove={(d) => {
+            const n = [...sections]
+            const [it] = n.splice(i, 1)
+            n.splice(i + d, 0, it)
+            setSections(n)
+          }}
+          onRemove={() => onRemove(i)}
+        />
+      ))}
+    </ol>
+  )
+}
+
 function SectionCard({
+  dragProps,
   section,
   index,
   count,
@@ -91,6 +135,7 @@ function SectionCard({
   onRemove,
   slug,
 }: {
+  dragProps: ReturnType<ReturnType<typeof useDragSort<Section>>['itemProps']>
   section: Section
   index: number
   count: number
@@ -104,8 +149,9 @@ function SectionCard({
   const def = SECTION_DEFS[section.type]
   const summary = 'headline' in section && section.headline ? section.headline.replace(/\*/g, '').split('\n')[0] : def.description
   return (
-    <li className={`border bg-white/55 transition-colors ${open ? 'border-olive-deep/40' : 'border-charcoal/10'} ${section.visible ? '' : 'opacity-70'}`}>
+    <li {...(open ? {} : dragProps)} className={`border bg-white/55 transition-colors ${dragClasses} ${open ? 'border-olive-deep/40' : 'border-charcoal/10'} ${section.visible ? '' : 'opacity-70'}`}>
       <div className="flex items-center gap-2 px-4 py-3">
+        {!open && <span className="cursor-grab select-none text-lg leading-none text-ink-soft" aria-hidden title="Drag to reorder">⋮⋮</span>}
         <button type="button" onClick={onToggleOpen} aria-expanded={open} className="min-w-0 flex-1 text-left">
           <span className="block text-[0.875rem] font-semibold">{def.label}{!section.visible && <span className="ml-2 font-normal text-ink-soft">(hidden)</span>}</span>
           <span className="block truncate text-xs text-ink-soft">{summary}</span>
@@ -183,28 +229,8 @@ export function PageEditor({
           return (
             <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
               <div className="space-y-8">
-                <p className="text-[0.9375rem] text-ink-soft">{meta.help} Open a section to edit it. Changes stay private until you press Publish.</p>
-                <ol className="space-y-2">
-                  {sections.map((s, i) => (
-                    <SectionCard
-                      key={s.key}
-                      slug={slug}
-                      section={s}
-                      index={i}
-                      count={sections.length}
-                      open={open === s.key}
-                      onToggleOpen={() => setOpen(open === s.key ? null : s.key)}
-                      onChange={(next) => setSections(sections.map((x, k) => (k === i ? next : x)))}
-                      onMove={(d) => {
-                        const n = [...sections]
-                        const [it] = n.splice(i, 1)
-                        n.splice(i + d, 0, it)
-                        setSections(n)
-                      }}
-                      onRemove={() => setRemoving(i)}
-                    />
-                  ))}
-                </ol>
+                <p className="text-[0.9375rem] text-ink-soft">{meta.help} Open a section to edit it, or drag sections to reorder them. Changes stay private until you press Publish.</p>
+                <SectionList slug={slug} sections={sections} open={open} setOpen={setOpen} setSections={setSections} onRemove={setRemoving} />
                 {available.length > 0 && (
                   <div className="flex flex-wrap items-end gap-2 border border-dashed border-charcoal/20 p-4">
                     <label className="min-w-56 flex-1 space-y-1.5">

@@ -65,7 +65,8 @@ function StoryForm({ draft, setDraft, fields }: { draft: StoryContent; setDraft:
   const auto = useRef(/^untitled-story-/.test(draft.slug) || draft.slug === '')
   const prevGallery = useRef(draft.gallery.length)
   useEffect(() => {
-    if (draft.gallery.length > prevGallery.current) toast.success('Added to the gallery')
+    const added = draft.gallery.length - prevGallery.current
+    if (added > 0) toast.success(added === 1 ? 'Added to the gallery' : `${added} items added to the gallery`)
     prevGallery.current = draft.gallery.length
   }, [draft.gallery.length])
   return (

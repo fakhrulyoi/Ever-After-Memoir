@@ -31,7 +31,7 @@ end $$;
 do $$ declare n int; begin
   perform pg_temp.as_role('anon', null);
   select count(*) into n from public.stories where status = 'published';
-  if n <> 4 then raise exception 'T1a anon should see 4 published stories, saw %', n; end if;
+  if n <> 3 then raise exception 'T1a anon should see 3 published stories, saw %', n; end if;
   select count(*) into n from (select id, published from public.pages) p;
   if n <> 6 then raise exception 'T1b anon should see 6 pages, saw %', n; end if;
   perform pg_temp.expect_error('select draft from public.stories', 'permission denied');
@@ -209,6 +209,37 @@ do $$ begin
   perform pg_temp.expect_error($q$update public.stories set status = 'published', published = null where id = '33333333-3333-4333-8333-333333333333'$q$, 'check constraint');
   perform pg_temp.expect_error($q$insert into public.site_settings (draft) values ('{}')$q$, 'duplicate key');
   raise notice 'PASS 11 status/published consistency and single settings row enforced';
+end $$;
+
+-- 12. Availability: public sees date + status of upcoming days only; never the note
+do $$ begin
+  perform pg_temp.as_role('authenticated', '11111111-1111-4111-8111-111111111111');
+  insert into public.availability (day, status, note) values (current_date + 30, 'booked', 'Private couple name'), (current_date - 3, 'booked', 'Past');
+end $$;
+do $$ declare n int; begin
+  perform pg_temp.as_role('anon', null);
+  select count(*) into n from public.availability where day = current_date + 30 and status = 'booked';
+  if n <> 1 then raise exception 'T12a anon cannot see an upcoming booked date'; end if;
+  select count(*) into n from public.availability where day < current_date;
+  if n <> 0 then raise exception 'T12b anon can see past dates'; end if;
+  perform pg_temp.expect_error('select note from public.availability', 'permission denied');
+  perform pg_temp.expect_error($q$insert into public.availability (day, status) values (current_date + 40, 'booked')$q$, 'permission denied');
+  perform pg_temp.expect_error($q$delete from public.availability$q$, 'permission denied');
+  raise notice 'PASS 12 availability: public reads upcoming date + status only, cannot write';
+end $$;
+do $$ begin
+  perform pg_temp.as_role('authenticated', '22222222-2222-4222-8222-222222222222');
+  perform pg_temp.expect_error($q$insert into public.availability (day, status) values (current_date + 41, 'booked')$q$, 'row-level security');
+  raise notice 'PASS 12b non-admin cannot change availability';
+end $$;
+
+-- 13. Booking inquiries may come without an email
+do $$ begin
+  perform pg_temp.as_role('service_role', null);
+  insert into public.inquiries (full_name, consent, source, wedding_date) values ('WhatsApp Couple', true, 'booking', current_date + 60);
+  perform pg_temp.expect_error($q$insert into public.inquiries (full_name, email, consent) values ('X', 'not-an-email', true)$q$, 'check constraint');
+  perform pg_temp.expect_error($q$insert into public.inquiries (full_name, consent, source) values ('X', true, 'other')$q$, 'check constraint');
+  raise notice 'PASS 13 booking inquiries without email accepted; bad email and source rejected';
 end $$;
 
 select 'ALL SECURITY TESTS PASSED' as result;

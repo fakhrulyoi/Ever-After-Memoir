@@ -136,7 +136,7 @@ export function InquiryInbox({ rows, retentionMonths }: { rows: InquiryRow[]; re
                     {r.status === 'new' && <span className="h-2 w-2 rounded-full bg-olive" aria-label="Unread" />}
                     {r.full_name}{r.partner_name && ` & ${r.partner_name}`}
                   </Link>
-                  <span className="text-xs text-ink-soft">{r.email}</span>
+                  <span className="text-xs text-ink-soft">{r.source === 'booking' ? 'Booking calendar → WhatsApp' : r.email}</span>
                 </td>
                 <td className="py-3 pr-3">{r.wedding_date ? formatDate(r.wedding_date) : '—'}<br /><span className="text-xs text-ink-soft">{r.location}</span></td>
                 <td className="py-3 pr-3">{r.service_interest}<br /><span className="text-xs text-ink-soft">{r.celebration_type}</span></td>
@@ -179,7 +179,11 @@ export function InquiryDetail({ inquiry, notes: initialNotes }: { inquiry: Inqui
       setStatus(prev)
       return toast.error(res.error)
     }
-    toast.success(`Marked as ${STATUS[s].label.toLowerCase()}`)
+    toast.success(
+      res.dateMarked
+        ? `Marked as booked — ${formatDate(res.dateMarked)} is now closed on your booking calendar`
+        : `Marked as ${STATUS[s].label.toLowerCase()}`,
+    )
     router.refresh()
   }
 
@@ -207,6 +211,7 @@ export function InquiryDetail({ inquiry, notes: initialNotes }: { inquiry: Inqui
   const subject = `Your wedding on ${inquiry.wedding_date ? formatDate(inquiry.wedding_date) : 'your big day'} — Ever After Memoir`
   const wa = waLink(inquiry.whatsapp, `Hi ${inquiry.full_name}, thank you for your inquiry with Ever After Memoir!`)
   const rows: [string, string][] = [
+    ['Came from', inquiry.source === 'booking' ? 'Booking calendar (continued on WhatsApp)' : 'Inquiry form'],
     ['Name', inquiry.full_name],
     ['Partner', inquiry.partner_name],
     ['Email', inquiry.email],
@@ -230,11 +235,16 @@ export function InquiryDetail({ inquiry, notes: initialNotes }: { inquiry: Inqui
           ))}
         </dl>
         <div>
-          <h2 className="mb-2 text-xs font-semibold text-ink-soft">Their notes</h2>
+          {inquiry.source === 'booking' && !inquiry.whatsapp && (
+          <p className="border-l-2 border-sage bg-cream px-3 py-2 text-sm">This couple was sent to WhatsApp to finish booking. Look for their message there — it includes reference <strong>{inquiry.id.slice(0, 8).toUpperCase()}</strong>.</p>
+        )}
+        <h2 className="mb-2 text-xs font-semibold text-ink-soft">Their notes</h2>
           <p className="whitespace-pre-wrap text-[0.9375rem] leading-relaxed">{inquiry.notes || '—'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a href={`mailto:${inquiry.email}?subject=${encodeURIComponent(subject)}`} className="inline-flex min-h-10 items-center rounded-[2px] bg-olive-deep px-4 text-[0.8125rem] font-semibold text-ivory hover:bg-olive">Reply by email</a>
+          {inquiry.email && (
+            <a href={`mailto:${inquiry.email}?subject=${encodeURIComponent(subject)}`} className="inline-flex min-h-10 items-center rounded-[2px] bg-olive-deep px-4 text-[0.8125rem] font-semibold text-ivory hover:bg-olive">Reply by email</a>
+          )}
           {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center rounded-[2px] border border-charcoal/20 px-4 text-[0.8125rem] font-semibold hover:border-olive-deep">Message on WhatsApp</a>}
         </div>
       </div>

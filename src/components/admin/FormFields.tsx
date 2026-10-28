@@ -2,9 +2,10 @@
 import Image from 'next/image'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { FieldDef } from '@/lib/content/fields'
-import type { GalleryItem, LinkValue, MediaRef, Reel } from '@/lib/content/types'
+import type { CollageItem, GalleryItem, LinkValue, MediaRef, Reel } from '@/lib/content/types'
 import { MediaLibrary } from './MediaLibrary'
 import { Button, FieldShell, Toggle, inputClass } from './ui'
+import { dragClasses, useDragSort } from './useDragSort'
 
 /** Extra data some fields need (e.g. the list of stories to pick from). */
 export interface FormContextValue {
@@ -113,6 +114,10 @@ function Field({ def, id, value, onChange, all }: { def: Exclude<FieldDef, { kin
       return <StoriesField id={id} label={def.label} help={def.help} value={(value as string[]) ?? []} onChange={onChange} />
     case 'reels':
       return <ReelsField id={id} label={def.label} value={(value as Reel[]) ?? []} onChange={onChange} />
+    case 'slides':
+      return <SlidesField id={id} label={def.label} help={def.help} max={def.max} value={(value as MediaRef[]) ?? []} onChange={onChange} />
+    case 'collage':
+      return <CollageField id={id} label={def.label} value={(value as CollageItem[]) ?? []} onChange={onChange} />
     case 'gallery':
       return <GalleryField id={id} label={def.label} value={(value as GalleryItem[]) ?? []} onChange={onChange} />
   }
@@ -309,15 +314,24 @@ function StoriesField({ id, label, help, value, onChange }: { id: string; label:
   )
 }
 
+function DragHandle() {
+  return (
+    <span className="cursor-grab select-none px-1 text-lg leading-none text-ink-soft active:cursor-grabbing" aria-hidden title="Drag to reorder">
+      ⋮⋮
+    </span>
+  )
+}
+
 function ReelsField({ id, label, value, onChange }: { id: string; label: string; value: Reel[]; onChange: (v: Reel[]) => void }) {
   const update = (i: number, patch: Partial<Reel>) => onChange(value.map((r, k) => (k === i ? { ...r, ...patch } : r)))
+  const { itemProps } = useDragSort(value, onChange)
   return (
     <fieldset className="space-y-3">
       <legend className="text-[0.8125rem] font-semibold">{label}</legend>
       {value.map((r, i) => (
-        <div key={i} className="space-y-3 border border-charcoal/10 bg-white/40 p-4">
+        <div key={i} {...itemProps(i)} className={`space-y-3 border border-charcoal/10 bg-white/40 p-4 ${dragClasses}`}>
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Reel {i + 1}</p>
+            <p className="flex items-center gap-2 text-sm font-medium"><DragHandle /> Reel {i + 1}</p>
             <div className="flex gap-1">
               <Button variant="ghost" className="min-h-8 px-2" disabled={i === 0} onClick={() => { const n = [...value]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; onChange(n) }} aria-label="Move reel up">↑</Button>
               <Button variant="ghost" className="min-h-8 px-2" disabled={i === value.length - 1} onClick={() => { const n = [...value]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; onChange(n) }} aria-label="Move reel down">↓</Button>
@@ -336,27 +350,141 @@ function ReelsField({ id, label, value, onChange }: { id: string; label: string;
   )
 }
 
-function GalleryField({ id, label, value, onChange }: { id: string; label: string; value: GalleryItem[]; onChange: (v: GalleryItem[]) => void }) {
+/** A strip of photos that can be added several at once and dragged into order. */
+function PhotoStrip<T>({
+  items,
+  onChange,
+  mediaOf,
+  render,
+  addLabel,
+  dialogTitle,
+  accept = 'image',
+  max,
+  make,
+}: {
+  items: T[]
+  onChange: (v: T[]) => void
+  /** undefined = this row has no photo slot (e.g. a chapter) */
+  mediaOf: (t: T) => MediaRef | null | undefined
+  render?: (t: T, i: number) => ReactNode
+  addLabel: string
+  dialogTitle: string
+  accept?: 'image' | 'video' | 'any'
+  max: number
+  make: (ref: MediaRef) => T
+}) {
   const [open, setOpen] = useState(false)
-  const update = (i: number, patch: Partial<GalleryItem>) => onChange(value.map((g, k) => (k === i ? { ...g, ...patch } : g)))
+  const { itemProps } = useDragSort(items, onChange)
   const move = (i: number, d: number) => {
-    const n = [...value]
-    const [item] = n.splice(i, 1)
-    n.splice(i + d, 0, item)
+    const n = [...items]
+    const [it] = n.splice(i, 1)
+    n.splice(i + d, 0, it)
     onChange(n)
   }
+  return (
+    <>
+      {items.length === 0 && <p className="border border-dashed border-charcoal/20 p-6 text-sm text-ink-soft">Nothing added yet.</p>}
+      <ol className="space-y-2">
+        {items.map((t, i) => {
+          const media = mediaOf(t)
+          return (
+            <li key={i} {...itemProps(i)} className={`flex flex-col gap-3 border border-charcoal/10 bg-white/50 p-3 sm:flex-row sm:items-center ${dragClasses}`}>
+              <DragHandle />
+              {media !== undefined && (
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-cream">{media && <MediaPreview media={media} />}</div>
+              )}
+              <div className="min-w-0 flex-1">{render?.(t, i)}</div>
+              <div className="flex gap-1">
+                <Button variant="ghost" className="min-h-9 px-2" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move item ${i + 1} up`}>↑</Button>
+                <Button variant="ghost" className="min-h-9 px-2" disabled={i === items.length - 1} onClick={() => move(i, 1)} aria-label={`Move item ${i + 1} down`}>↓</Button>
+                <Button variant="ghost" className="min-h-9 px-2" onClick={() => onChange(items.filter((_, k) => k !== i))}>Remove</Button>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+      {items.length < max && <Button variant="primary" onClick={() => setOpen(true)}>{addLabel}</Button>}
+      <AdminDialog open={open} onClose={() => setOpen(false)} title={dialogTitle}>
+        <MediaLibrary
+          mode="pick"
+          accept={accept}
+          onPickMany={(refs) => {
+            onChange([...items, ...refs.slice(0, max - items.length).map(make)])
+            setOpen(false)
+          }}
+        />
+      </AdminDialog>
+    </>
+  )
+}
+
+function SlidesField({ id, label, help, max, value, onChange }: { id: string; label: string; help?: string; max: number; value: MediaRef[]; onChange: (v: MediaRef[]) => void }) {
+  return (
+    <fieldset className="space-y-3" id={id}>
+      <legend className="text-[0.8125rem] font-semibold">{label}</legend>
+      {help && <p className="text-xs text-ink-soft">{help}</p>}
+      <PhotoStrip
+        items={value}
+        onChange={onChange}
+        mediaOf={(m) => m}
+        render={(m, i) => (
+          <p className="text-sm">
+            <span className="font-medium">Photo {i + 1}</span>
+            {m.width && m.width < 900 && <span className="block text-xs text-[#6b4f1d]">Small photo ({m.width} px wide) — may look soft on large screens.</span>}
+          </p>
+        )}
+        addLabel="Add photos"
+        dialogTitle="Choose reel photos"
+        max={max}
+        make={(ref) => ref}
+      />
+    </fieldset>
+  )
+}
+
+function CollageField({ id, label, value, onChange }: { id: string; label: string; value: CollageItem[]; onChange: (v: CollageItem[]) => void }) {
+  const update = (i: number, patch: Partial<CollageItem>) => onChange(value.map((g, k) => (k === i ? { ...g, ...patch } : g)))
+  return (
+    <fieldset className="space-y-3" id={id}>
+      <legend className="text-[0.8125rem] font-semibold">{label}</legend>
+      <p className="text-xs text-ink-soft">Three to six photos. The first two sit at the top, the rest below the heading.</p>
+      <PhotoStrip
+        items={value}
+        onChange={onChange}
+        mediaOf={(g) => g.media}
+        render={(g, i) => (
+          <input aria-label={`Caption for photo ${i + 1}`} placeholder="Caption (optional)" className={inputClass} value={g.caption} maxLength={120} onChange={(e) => update(i, { caption: e.target.value })} />
+        )}
+        addLabel="Add photos"
+        dialogTitle="Choose collage photos"
+        max={6}
+        make={(ref) => ({ media: ref, caption: '' })}
+      />
+    </fieldset>
+  )
+}
+
+function GalleryField({ id, label, value, onChange }: { id: string; label: string; value: GalleryItem[]; onChange: (v: GalleryItem[]) => void }) {
+  const update = (i: number, patch: Partial<GalleryItem>) => onChange(value.map((g, k) => (k === i ? { ...g, ...patch } : g)))
   return (
     <fieldset className="space-y-3" id={id}>
       <legend className="sr-only">{label}</legend>
       <p className="text-xs text-ink-soft">
-        Add photos and films in the order they should appear. “Half width” items sit side by side in pairs. Videos play only when visitors press play.
+        Add photos and films in the order they should appear — select several at once, then drag to reorder. “Half width” items sit side by side in pairs.
+        Add a <strong>chapter</strong> to start a new part of the story, e.g. “The akad” or “The reception”.
       </p>
-      {value.length === 0 && <p className="border border-dashed border-charcoal/20 p-6 text-sm text-ink-soft">No photos yet.</p>}
-      <ol className="space-y-2">
-        {value.map((g, i) => (
-          <li key={i} className="flex flex-col gap-3 border border-charcoal/10 bg-white/50 p-3 sm:flex-row sm:items-center">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-cream">{g.media && <MediaPreview media={g.media} />}</div>
-            <div className="grid flex-1 gap-2 sm:grid-cols-[1fr_10rem]">
+      <PhotoStrip
+        items={value}
+        onChange={onChange}
+        mediaOf={(g) => (g.layout === 'chapter' ? undefined : g.media)}
+        render={(g, i) =>
+          g.layout === 'chapter' ? (
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 rounded-full bg-olive-deep px-2.5 py-0.5 text-xs font-semibold text-ivory">Chapter</span>
+              <input aria-label={`Chapter title ${i + 1}`} placeholder="Chapter title, e.g. The akad" className={inputClass} value={g.caption} maxLength={80} onChange={(e) => update(i, { caption: e.target.value })} />
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-[1fr_10rem]">
               <input aria-label={`Caption for item ${i + 1}`} placeholder="Caption (optional)" className={inputClass} value={g.caption} maxLength={200} onChange={(e) => update(i, { caption: e.target.value })} />
               <select aria-label={`Layout for item ${i + 1}`} className={inputClass} value={g.layout} onChange={(e) => update(i, { layout: e.target.value as GalleryItem['layout'] })}>
                 <option value="full">Full width</option>
@@ -364,23 +492,15 @@ function GalleryField({ id, label, value, onChange }: { id: string; label: strin
                 <option value="offset">Smaller, offset</option>
               </select>
             </div>
-            <div className="flex gap-1">
-              <Button variant="ghost" className="min-h-9 px-2" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move item ${i + 1} up`}>↑</Button>
-              <Button variant="ghost" className="min-h-9 px-2" disabled={i === value.length - 1} onClick={() => move(i, 1)} aria-label={`Move item ${i + 1} down`}>↓</Button>
-              <Button variant="ghost" className="min-h-9 px-2" onClick={() => onChange(value.filter((_, k) => k !== i))}>Remove</Button>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <Button variant="primary" onClick={() => setOpen(true)}>Add photos or films</Button>
-      <AdminDialog open={open} onClose={() => setOpen(false)} title="Add to the gallery">
-        <p className="mb-4 text-sm text-ink-soft">Select a file and press “Use this”. Upload several at once, then add each one.</p>
-        <MediaLibrary
-          mode="pick"
-          accept="any"
-          onPick={(ref) => onChange([...value, { media: ref, caption: '', layout: ref.width && ref.height && ref.width > ref.height ? 'full' : 'half' }])}
-        />
-      </AdminDialog>
+          )
+        }
+        addLabel="Add photos or films"
+        dialogTitle="Add to the gallery"
+        accept="any"
+        max={80}
+        make={(ref): GalleryItem => ({ media: ref, caption: '', layout: ref.width && ref.height && ref.width > ref.height ? 'full' : 'half' })}
+      />
+      {value.length < 80 && <Button onClick={() => onChange([...value, { media: null, caption: '', layout: 'chapter' }])}>Add a chapter</Button>}
     </fieldset>
   )
 }

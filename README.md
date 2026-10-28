@@ -14,14 +14,15 @@ Website portfolio wedding content creator (tema olive green) dengan admin dashbo
 
 1. Buat projek di [supabase.com](https://supabase.com) → **New project**. Pilih region **Singapore** (paling dekat dengan Malaysia).
 2. **SQL Editor** → **New query**. Buka fail `supabase/migrations/0001_schema.sql`, salin semua, tampal, dan tekan **Run**.
-3. Buat query baru. Buka `supabase/migrations/0002_seed.sql`, salin, tampal dan **Run**. Ini isi kandungan permulaan (teks dari brief + gambar sampel).
-4. **Authentication → Sign In / Providers**:
+3. Buat query baru. Buka `supabase/migrations/0002_seed.sql`, salin, tampal dan **Run**. Ini isi kandungan permulaan (teks dari brief + gambar anda).
+4. Buat query baru lagi. Buka `supabase/migrations/0003_booking.sql`, salin, tampal dan **Run**. Ini untuk kalendar booking. **Ikut turutan 0001 → 0002 → 0003.**
+5. **Authentication → Sign In / Providers**:
    - Pastikan **Email** dihidupkan.
    - **Matikan “Allow new users to sign up”**. Tiada sesiapa boleh daftar sendiri.
-5. **Authentication → URL Configuration**:
+6. **Authentication → URL Configuration**:
    - **Site URL**: alamat website anda (contoh `https://ever-after-memoir.vercel.app`).
    - **Redirect URLs**: tambah `https://ALAMAT-ANDA/auth/callback`. Jika ada domain sendiri nanti, tambah juga untuk domain itu.
-6. Cipta akaun admin pertama:
+7. Cipta akaun admin pertama:
    - **Authentication → Users → Add user → Create new user**. Masukkan email & password, dan tandakan **Auto Confirm User**.
    - Kembali ke **SQL Editor** dan jalankan (tukar emel):
      ```sql
@@ -29,7 +30,7 @@ Website portfolio wedding content creator (tema olive green) dengan admin dashbo
      select id from auth.users where email = 'emel-anda@contoh.com';
      ```
    Hanya akaun dalam `admin_users` boleh masuk admin. Akaun lain akan ditolak walaupun password betul.
-7. **Project Settings → API Keys**, salin:
+8. **Project Settings → API Keys**, salin:
    - **Project URL**
    - **anon / publishable key**: kunci awam, selamat diletak dalam browser.
    - **service_role / secret key**: **RAHSIA**. Jangan kongsi dan jangan letak dalam kod.
@@ -81,9 +82,11 @@ Selepas deploy pertama, semak `NEXT_PUBLIC_SITE_URL` sama dengan alamat sebenar.
 
 Buka `/admin`. Halaman **Overview** ada senarai “Before you launch”:
 
-- [ ] Gantikan 4 cerita sampel dengan majlis sebenar (Stories → edit, atau Archive/Delete sampel)
-- [ ] Tukar gambar & video hero di **Homepage**. Semua gambar sampel bertanda “Sample”.
-- [ ] Isi emel awam / nombor WhatsApp di **Settings & SEO**. Butang WhatsApp hanya muncul bila nombor diisi.
+- [ ] **Isi nombor WhatsApp di Settings & SEO** (format `60123456789`). Tanpa nombor ini, booking tak boleh terus ke WhatsApp — pasangan diminta isi emel sebagai ganti. Tiada nombor direka dalam kod.
+- [ ] Tanda tarikh yang sudah ditempah di **Availability**.
+- [ ] Gantikan 3 cerita sampel dengan majlis sebenar. Ia guna gambar anda tetapi bertanda “Sample story” sebab ceritanya contoh.
+- [ ] Gantikan film & reels sampel (dibuat dari gambar) dengan video sebenar di **Homepage → Films**.
+- [ ] Upload gambar asal resolusi tinggi (≥2000px). Gambar sekarang dari tangkapan Instagram/WhatsApp (±400–1200px), jadi nampak lembut di skrin besar.
 - [ ] Semak semula teks **Privacy policy**
 - [ ] Isi bahagian **About → About the founder** jika mahu (asalnya disembunyikan; tiada biodata direka)
 - [ ] Testimonial: tambah hanya kata-kata pasangan yang telah bersetuju. Toggle “approved” wajib sebelum publish.
@@ -103,7 +106,16 @@ Tips teks: dalam tajuk, `*perkataan*` jadi *italic* dan Enter jadi baris baru. D
 - **Replace file** menukar fail di semua tempat ia digunakan.
 - Fail yang sedang dipakai di website akan diberi amaran sebelum dipadam.
 
-**Inquiries**: borang Contact masuk ke sini.
+**Booking & Availability** (kalendar di `/contact#book`, butang “Check your date” di seluruh website):
+- Pasangan pilih tarikh di kalendar → isi nama, jenis majlis, servis, lokasi → tekan *Continue on WhatsApp*. Inquiry disimpan dahulu, kemudian WhatsApp dibuka dengan mesej siap ditulis (ada nombor rujukan).
+- **Availability** di admin: klik tarikh (Shift+klik untuk julat) → pilih *Booked*, *Few slots left*, *Not available* atau *Available*. Kalendar website berubah serta-merta, tanpa publish. Tarikh yang tidak ditanda dikira *available*.
+- Bila inquiry ditukar ke **Booked**, tarikhnya ditutup di kalendar secara automatik.
+- **Settings & SEO → Booking**: hidup/matikan booking, berapa hari notis minimum, berapa bulan ke depan, dan teks mesej WhatsApp. Placeholder: `{date}` (Bahasa Melayu), `{date_en}`, `{name}`, `{partner}`, `{type}`, `{service}`, `{location}`, `{notes}`, `{ref}`. Baris yang kosong dibuang sendiri.
+- Nota peribadi tarikh hanya admin nampak; awam cuma nampak status.
+
+**Seksyen homepage baru**: *Reel* (gambar bertukar macam story, tekan & tahan untuk pause), *Image break* (gambar penuh dengan petikan), *Collage* (gambar bertaburan dengan parallax). Semua boleh disusun semula dengan drag, disembunyikan, atau dibuang. Pilih banyak gambar sekaligus dalam Media library.
+
+**Inquiries**: borang Contact dan booking WhatsApp masuk ke sini (sumber ditunjuk).
 - Status boleh ditukar: New / Contacted / Booked / Closed.
 - Nota peribadi hanya admin nampak.
 - Ada butang Email & WhatsApp, dan muat turun CSV.
@@ -131,13 +143,13 @@ Untuk emel reset password yang lebih dipercayai, set **Supabase → Authenticati
 
 ## 7. Keselamatan — apa yang dibina
 
-- **Row Level Security** pada semua 13 jadual. Pengunjung awam hanya boleh baca kolum *published* untuk kandungan yang dipublish; kolum `draft` tidak boleh dibaca langsung.
+- **Row Level Security** pada semua 14 jadual. Pengunjung awam hanya boleh baca kolum *published* untuk kandungan yang dipublish; kolum `draft` tidak boleh dibaca langsung.
 - Inquiry & nota peribadi hanya untuk admin. Inquiry dimasukkan oleh server sahaja (service key tidak pernah sampai ke browser).
 - Upload storage hanya untuk admin. Jenis & saiz fail disemak di browser, server dan bucket.
 - Borang inquiry:
   - Pengesahan di browser + server.
   - Honeypot dan semakan masa isi.
-  - Had **5 inquiry sejam bagi setiap IP**. IP disimpan sebagai hash, bukan IP sebenar.
+  - Had **5 inquiry/booking sejam bagi setiap IP**. IP disimpan sebagai hash, bukan IP sebenar.
   - Hanya diterima dari domain sendiri.
 - Tiada pendaftaran awam. Admin ditambah melalui SQL sahaja. Semua tindakan admin disemak semula di server.
 - Publish berlaku dalam satu langkah atomik di database. Jika gagal, versi live lama kekal.
@@ -146,10 +158,10 @@ Untuk emel reset password yang lebih dipercayai, set **Supabase → Authenticati
 
 | Ujian | Keputusan |
 |---|---|
-| Ujian keselamatan database (`supabase/tests`) — 14 semakan RLS, publish, media, inquiry | ✅ semua lulus |
-| Ujian penerimaan end-to-end (`tests/e2e.py`) — 22 aliran dalam brief, pada stack Supabase tempatan (GoTrue + PostgREST + Postgres 16) | ✅ 22/22 |
+| Ujian keselamatan database (`supabase/tests`) — RLS, publish, media, inquiry, availability | ✅ 18/18 |
+| Ujian penerimaan end-to-end (`tests/e2e.py`) — 22 aliran dalam brief + booking → WhatsApp, pada stack Supabase tempatan (GoTrue + PostgREST + Postgres 16) | ✅ 23/23 |
 | Lighthouse (mobile) — Accessibility / Best Practices / SEO | 100 / 100 / 100 |
-| Lighthouse Performance (pelayan tempatan tanpa CDN) | 85–92 |
+| Lighthouse Performance (pelayan tempatan tanpa CDN) | 88–89 |
 | Had kadar borang (permintaan ke-6 dalam sejam) | ✅ ditolak (429) |
 
 Cara ulang ujian:
@@ -165,10 +177,11 @@ python3 tests/e2e.py
 
 Saya tak boleh buat bahagian ini sebab ia perlukan akaun anda:
 
-1. Cipta projek Supabase dan jalankan 2 fail SQL (bahagian 1)
+1. Cipta projek Supabase dan jalankan 3 fail SQL (bahagian 1)
 2. Cipta akaun admin (bahagian 1, langkah 6)
 3. Deploy ke Vercel & isi environment variables (bahagian 2)
-4. Pilihan: Resend untuk emel, domain sendiri
+4. Isi nombor WhatsApp & tanda tarikh booked di admin
+5. Pilihan: Resend untuk emel, domain sendiri
 
 Nota pelan:
 - **Supabase Free** dijeda jika lama tidak aktif dan hadkan fail kepada 50 MB. Untuk bisnes, pertimbangkan Supabase Pro.

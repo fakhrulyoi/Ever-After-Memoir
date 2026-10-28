@@ -49,12 +49,18 @@ export function MediaLibrary({
   mode = 'manage',
   accept = 'any',
   onPick,
+  onPickMany,
 }: {
   initial?: MediaAsset[]
   mode?: 'manage' | 'pick'
   accept?: 'image' | 'video' | 'any'
   onPick?: (ref: MediaRef) => void
+  /** Pick several at once (gallery, reel, collage) */
+  onPickMany?: (refs: MediaRef[]) => void
 }) {
+  const multiple = mode === 'pick' && Boolean(onPickMany)
+  const [chosen, setChosen] = useState<string[]>([])
+  const toggleChosen = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
   const [assets, setAssets] = useState<MediaAsset[]>(initial ?? [])
   const [loading, setLoading] = useState(!initial)
   const [query, setQuery] = useState('')
@@ -92,12 +98,13 @@ export function MediaLibrary({
         if (!res.ok) throw new Error(res.error)
         setAssets((a) => [res.asset, ...a])
         setQueue((q) => q.filter((x) => x.key !== item.key))
-        setSelected(res.asset.id)
+        if (onPickMany) setChosen((c) => [...c, res.asset.id])
+        else setSelected(res.asset.id)
       } catch (e) {
         setQueue((q) => q.map((x) => (x.key === item.key ? { ...x, error: (e as Error).message } : x)))
       }
     },
-    [folder],
+    [folder, onPickMany],
   )
 
   const addFiles = (files: FileList | File[]) => {
@@ -185,10 +192,10 @@ export function MediaLibrary({
               <li key={a.id}>
                 <button
                   type="button"
-                  onClick={() => setSelected(a.id)}
-                  onDoubleClick={() => mode === 'pick' && onPick?.(assetToRef(a))}
-                  className={`group relative block aspect-square w-full overflow-hidden bg-cream outline-offset-2 ${selected === a.id ? 'ring-2 ring-olive-deep ring-offset-2 ring-offset-ivory' : ''}`}
-                  aria-pressed={selected === a.id}
+                  onClick={() => (multiple ? toggleChosen(a.id) : setSelected(a.id))}
+                  onDoubleClick={() => mode === 'pick' && !multiple && onPick?.(assetToRef(a))}
+                  className={`group relative block aspect-square w-full overflow-hidden bg-cream outline-offset-2 ${selected === a.id || chosen.includes(a.id) ? 'ring-2 ring-olive-deep ring-offset-2 ring-offset-ivory' : ''}`}
+                  aria-pressed={multiple ? chosen.includes(a.id) : selected === a.id}
                   aria-label={`${a.type === 'video' ? 'Video' : 'Photo'}: ${a.alt_text || a.url.split('/').pop()}`}
                 >
                   <Thumb a={a} />
@@ -197,6 +204,11 @@ export function MediaLibrary({
                     {a.is_sample && <span className="bg-ivory/90 px-1.5 py-0.5 text-[0.625rem] text-olive-deep">Sample</span>}
                   </span>
                   {!a.alt_text && a.type === 'image' && <span className="absolute bottom-1.5 left-1.5 bg-[#efe3c8] px-1.5 py-0.5 text-[0.625rem] text-[#6b4f1d]">No alt text</span>}
+                  {multiple && (
+                    <span className={`absolute right-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full border-2 px-1 text-xs font-bold ${chosen.includes(a.id) ? 'border-olive-deep bg-olive-deep text-ivory' : 'border-ivory bg-charcoal/30'}`} aria-hidden>
+                      {chosen.includes(a.id) ? chosen.indexOf(a.id) + 1 : ''}
+                    </span>
+                  )}
                 </button>
               </li>
             ))}
@@ -204,7 +216,26 @@ export function MediaLibrary({
         )}
       </div>
 
-      {current && (
+      {multiple && (
+        <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex items-center justify-between gap-3 border-t border-charcoal/10 bg-ivory/95 px-6 py-4 backdrop-blur lg:col-span-2">
+          <p className="text-sm">{chosen.length ? `${chosen.length} selected — added in the order you picked them` : 'Click photos to select them. Upload new ones and they are selected for you.'}</p>
+          <div className="flex gap-2">
+            {chosen.length > 0 && <Button variant="ghost" onClick={() => setChosen([])}>Clear</Button>}
+            <Button
+              variant="primary"
+              disabled={!chosen.length}
+              onClick={() => {
+                onPickMany?.(chosen.map((id) => assets.find((a) => a.id === id)).filter((a): a is MediaAsset => !!a).map(assetToRef))
+                setChosen([])
+              }}
+            >
+              Add {chosen.length || ''} {chosen.length === 1 ? 'file' : 'files'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {current && !multiple && (
         <MediaDetails
           key={current.id}
           asset={current}

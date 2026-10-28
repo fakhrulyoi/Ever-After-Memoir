@@ -1,6 +1,6 @@
 'use client'
-import { m, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react'
-import { useRef, useState } from 'react'
+import { m, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
 import type {
   CtaSection,
   FeaturedStoriesSection,
@@ -29,9 +29,15 @@ import { IconInstagram, IconPlay, IconTikTok } from '../icons'
 import { LoopVideo, SmartImage, VideoPlayer } from '../Media'
 import { Modal } from '../Modal'
 import { Timecode } from '../Timecode'
+import { HeroReel } from './hero'
 
 // ---------------------------------------------------------------------------
 export function Hero({ s }: { s: HeroSection }) {
+  if (s.layout === 'reel' && (s.slides.length > 0 || s.media)) return <HeroReel s={s} />
+  return <HeroFull s={s} />
+}
+
+function HeroFull({ s }: { s: HeroSection }) {
   const ref = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '18%'])
@@ -111,7 +117,7 @@ export function Philosophy({ s }: { s: PhilosophySection }) {
           {s.eyebrow && <Reveal><p className="kicker mb-8">{s.eyebrow}</p></Reveal>}
           <MaskedText
             text={s.headline}
-            className={`display display-lg text-olive-deep ${left ? 'md:-ml-[12%]' : 'md:-mr-[12%]'} relative z-10`}
+            className="display display-lg relative z-10 text-olive-deep"
           />
           <Reveal delay={0.2} className="mt-10 space-y-5">
             <Paragraphs text={s.body} className="lede" />
@@ -154,12 +160,25 @@ function SampleTag({ show, dark }: { show: boolean; dark?: boolean }) {
   )
 }
 
-const FEATURE_LAYOUT = [
-  { box: 'md:col-span-7', aspect: 'aspect-[4/5]' },
-  { box: 'md:col-span-4 md:col-start-9 md:mt-48', aspect: 'aspect-[3/4]' },
-  { box: 'md:col-span-5 md:col-start-2 md:-mt-24', aspect: 'aspect-[3/2]' },
-  { box: 'md:col-span-5 md:col-start-8 md:mt-24', aspect: 'aspect-[4/5]' },
-]
+// Editorial arrangements by number of stories
+const FEATURE_LAYOUTS: Record<number, { box: string; aspect: string }[]> = {
+  1: [{ box: 'md:col-span-8 md:col-start-3', aspect: 'aspect-[4/5] md:aspect-[3/2]' }],
+  2: [
+    { box: 'md:col-span-6', aspect: 'aspect-[4/5]' },
+    { box: 'md:col-span-5 md:col-start-8 md:mt-40', aspect: 'aspect-[3/4]' },
+  ],
+  3: [
+    { box: 'md:col-span-7', aspect: 'aspect-[4/5]' },
+    { box: 'md:col-span-4 md:col-start-9 md:mt-48', aspect: 'aspect-[3/4]' },
+    { box: 'md:col-span-6 md:col-start-4 md:-mt-8', aspect: 'aspect-[4/5] md:aspect-[5/4]' },
+  ],
+  4: [
+    { box: 'md:col-span-7', aspect: 'aspect-[4/5]' },
+    { box: 'md:col-span-4 md:col-start-9 md:mt-48', aspect: 'aspect-[3/4]' },
+    { box: 'md:col-span-5 md:col-start-2 md:-mt-24', aspect: 'aspect-[3/2]' },
+    { box: 'md:col-span-5 md:col-start-8 md:mt-24', aspect: 'aspect-[4/5]' },
+  ],
+}
 
 export function StoryCard({
   story,
@@ -177,23 +196,59 @@ export function StoryCard({
   const Title = level
   const s = story.content
   const meta = [s.location, s.tags[0]].filter(Boolean).join(', ')
+  const desktop = useIsDesktop()
+  const reduce = useReducedMotion()
+  // On hover, flick through a few photos from the story (desktop only)
+  const frames = [s.cover, ...s.gallery.map((g) => g.media).filter((x) => x?.type === 'image' && x.url !== s.cover?.url)].filter(Boolean).slice(0, 4)
+  const [hover, setHover] = useState(false)
+  const [frame, setFrame] = useState(0)
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!hover || !desktop || reduce || frames.length < 2) {
+      setFrame(0)
+      return
+    }
+    const t = setInterval(() => setFrame((f) => (f + 1) % frames.length), 950)
+    return () => clearInterval(t)
+  }, [hover, desktop, reduce, frames.length])
   return (
     <SiteLink href={`/stories/${s.slug}`} className="group block">
-      <div data-cursor="View" className="relative">
+      <div
+        data-cursor="View"
+        className="relative"
+        onPointerEnter={() => {
+          setHover(true)
+          setArmed(true)
+        }}
+        onPointerLeave={() => setHover(false)}
+      >
         <SampleTag show={s.isSample} />
         <ImageReveal className={aspect}>
           <div className="absolute inset-0 transition-transform duration-[1.6s] ease-[var(--ease-film)] group-hover:scale-[1.04]">
             <SmartImage media={s.cover} sizes={sizes} priority={priority} />
+            {armed &&
+              frames.slice(1).map((f, i) => (
+                <div key={i} className="absolute inset-0 transition-opacity duration-500" style={{ opacity: frame === i + 1 ? 1 : 0 }} aria-hidden>
+                  <SmartImage media={f} sizes={sizes} alt="" />
+                </div>
+              ))}
           </div>
         </ImageReveal>
+        {frames.length > 1 && desktop && (
+          <span className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex gap-1 opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden>
+            {frames.map((_, i) => (
+              <span key={i} className={`h-[2px] flex-1 rounded-full transition-colors duration-300 ${i <= frame ? 'bg-ivory' : 'bg-ivory/35'}`} />
+            ))}
+          </span>
+        )}
       </div>
       <div className="mt-5 flex items-baseline justify-between gap-6">
-        <Title className="display text-[clamp(1.6rem,2.4vw,2.25rem)] leading-tight text-olive-deep transition-[font-style] group-hover:italic">
+        <Title className="display text-[clamp(1.7rem,2.5vw,2.4rem)] leading-tight text-olive-deep transition-[font-style] group-hover:italic">
           {s.title}
         </Title>
         {meta && <p className="meta shrink-0">{meta}</p>}
       </div>
-      {s.excerpt && <p className="mt-2 max-w-md text-[0.9375rem] text-ink-soft">{s.excerpt}</p>}
+      {s.excerpt && <p className="mt-2 max-w-md text-[1rem] leading-relaxed text-ink-soft">{s.excerpt}</p>}
     </SiteLink>
   )
 }
@@ -220,7 +275,7 @@ export function FeaturedStories({ s, data }: { s: FeaturedStoriesSection; data: 
         </div>
         <div className="grid gap-16 md:grid-cols-12 md:gap-x-0 md:gap-y-28">
           {stories.map((story, i) => {
-            const l = FEATURE_LAYOUT[i % FEATURE_LAYOUT.length]
+            const l = FEATURE_LAYOUTS[stories.length][i]
             return (
               <div key={story.id} className={l.box}>
                 <StoryCard story={story} aspect={l.aspect} sizes="(min-width: 768px) 55vw, 100vw" />
@@ -237,8 +292,14 @@ export function FeaturedStories({ s, data }: { s: FeaturedStoriesSection; data: 
 export function Films({ s }: { s: FilmsSection }) {
   const [open, setOpen] = useState<Reel | null>(null)
   const reels = s.reels.filter((r) => r.video)
+  const ref = useRef<HTMLElement>(null)
+  const desktop = useIsDesktop()
+  const reduce = useReducedMotion()
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  const drift = useTransform(scrollYProgress, [0.3, 1], ['8%', '-6%'])
+  const filmScale = useTransform(scrollYProgress, [0, 0.4], [0.92, 1])
   return (
-    <section className="on-dark section-y overflow-hidden bg-olive-deep text-ivory">
+    <section ref={ref} className="on-dark section-y overflow-hidden bg-olive-deep text-ivory">
       <div className="shell">
         <div className="mb-14 grid gap-8 md:mb-20 md:grid-cols-12 md:items-end">
           <div className="md:col-span-7">
@@ -250,10 +311,10 @@ export function Films({ s }: { s: FilmsSection }) {
           </Reveal>
         </div>
         {s.film && (
-          <Reveal y={40}>
+          <m.div style={desktop && !reduce ? { scale: filmScale } : undefined}>
             <VideoPlayer media={s.film} poster={s.poster} title={plain(s.headline)} aspect={s.film.width && s.film.height ? `${s.film.width} / ${s.film.height}` : '16 / 9'} />
             {s.filmCaption && <p className="meta mt-4">{s.filmCaption}</p>}
-          </Reveal>
+          </m.div>
         )}
       </div>
       {reels.length > 0 && (
@@ -262,7 +323,7 @@ export function Films({ s }: { s: FilmsSection }) {
             <p className="text-sm text-taupe">Little reels</p>
             <p className="meta hidden md:block">Tap to watch with sound</p>
           </div>
-          <ul className="no-scrollbar shell flex snap-x snap-mandatory scroll-px-[clamp(1rem,4.5vw,4rem)] gap-4 overflow-x-auto pb-2 md:gap-6">
+          <m.ul style={desktop && !reduce ? { x: drift } : undefined} className="no-scrollbar shell flex snap-x snap-mandatory scroll-px-[clamp(1rem,4.5vw,4rem)] gap-4 overflow-x-auto pb-2 md:gap-6">
             {reels.map((r, i) => (
               <li key={i} className="w-[62vw] max-w-[320px] shrink-0 snap-start sm:w-[38vw] md:w-[24vw]">
                 <button
@@ -278,11 +339,11 @@ export function Films({ s }: { s: FilmsSection }) {
                       <IconPlay size={14} />
                     </span>
                   </div>
-                  {r.caption && <p className="mt-3 text-[0.9375rem] text-ivory/85">{r.caption}</p>}
+                  {r.caption && <p className="display mt-3 text-xl italic text-ivory/90">{r.caption}</p>}
                 </button>
               </li>
             ))}
-          </ul>
+          </m.ul>
         </div>
       )}
       <Modal open={!!open} onClose={() => setOpen(null)} label="Reel">

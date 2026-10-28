@@ -31,13 +31,22 @@ function Tile({ item, i, sizes, title, onOpen }: { item: GalleryItem; i: number;
   )
 }
 
-type Row = { kind: 'full' | 'offset'; item: GalleryItem; i: number } | { kind: 'pair'; items: { item: GalleryItem; i: number }[] }
+type Row =
+  | { kind: 'full' | 'offset'; item: GalleryItem; i: number }
+  | { kind: 'pair'; items: { item: GalleryItem; i: number }[] }
+  | { kind: 'chapter'; title: string; n: number }
 
-/** Group consecutive "half" items into pairs. */
+/** Group consecutive "half" items into pairs; chapters start a new part. */
 function rows(gallery: GalleryItem[]): Row[] {
   const out: Row[] = []
   let pair: { item: GalleryItem; i: number }[] = []
+  let chapter = 0
   gallery.forEach((item, i) => {
+    if (item.layout === 'chapter') {
+      if (pair.length) { out.push({ kind: 'pair', items: pair }); pair = [] }
+      if (item.caption.trim()) out.push({ kind: 'chapter', title: item.caption.trim(), n: ++chapter })
+      return
+    }
     if (!item.media) return
     if (item.layout === 'half') {
       pair.push({ item, i })
@@ -45,10 +54,16 @@ function rows(gallery: GalleryItem[]): Row[] {
       return
     }
     if (pair.length) { out.push({ kind: 'pair', items: pair }); pair = [] }
-    out.push({ kind: item.layout, item, i })
+    out.push({ kind: item.layout as 'full' | 'offset', item, i })
   })
   if (pair.length) out.push({ kind: 'pair', items: pair })
   return out
+}
+
+/** Keep tall photos within one screen height instead of stretching them edge to edge. */
+function fullWidth(m: MediaRef | null) {
+  if (!m?.width || !m?.height || m.width >= m.height) return '100%'
+  return `min(100%, calc(86svh * ${(m.width / m.height).toFixed(3)}))`
 }
 
 function aspectOf(m: MediaRef) {
@@ -109,7 +124,21 @@ export function StoryView({ story, next }: { story: Published<StoryContent>; nex
 
       <div className="shell space-y-16 pb-28 md:space-y-32 md:pb-40">
         {rows(s.gallery).map((row, k) =>
-          row.kind === 'pair' ? (
+          row.kind === 'chapter' ? (
+            <div key={k} className="pt-6 md:pt-10">
+              <m.div
+                className="hairline mb-8 origin-left"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true, amount: 1 }}
+                transition={{ duration: 1.4, ease: EASE }}
+              />
+              <div className="grid items-baseline gap-4 md:grid-cols-12">
+                <span className="display text-3xl italic text-olive md:col-span-2">{String(row.n).padStart(2, '0')}</span>
+                <MaskedText as="h2" text={row.title} className="display display-md text-olive-deep md:col-span-10" />
+              </div>
+            </div>
+          ) : row.kind === 'pair' ? (
             <div key={k} className="grid gap-6 md:grid-cols-12 md:gap-8">
               {row.items.map(({ item, i }, j) => (
                 <div key={i} className={j === 0 ? 'md:col-span-6' : 'md:col-span-5 md:col-start-8 md:mt-32'}>
@@ -124,7 +153,7 @@ export function StoryView({ story, next }: { story: Published<StoryContent>; nex
               </div>
             </div>
           ) : (
-            <div key={k}>
+            <div key={k} className="mx-auto" style={{ maxWidth: fullWidth(row.item.media) }}>
               <Tile title={s.title} onOpen={openAt} item={row.item} i={row.i} sizes="100vw" />
             </div>
           ),

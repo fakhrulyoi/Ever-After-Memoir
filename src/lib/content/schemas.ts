@@ -46,6 +46,9 @@ export const sectionSchema = z.discriminatedUnion('type', [
   z.object({
     ...base,
     type: z.literal('hero'),
+    layout: z.enum(['reel', 'full']).default('reel'),
+    slides: z.array(mediaRefSchema).max(10).default([]),
+    interval: z.number().min(2).max(15).default(5),
     eyebrow: text(80),
     headline: text(140),
     body: text(500),
@@ -107,6 +110,7 @@ export const sectionSchema = z.discriminatedUnion('type', [
   z.object({
     ...base,
     type: z.literal('page_intro'),
+    layout: z.enum(['side', 'wide']).default('side'),
     eyebrow: text(80),
     headline: text(160),
     body: text(800),
@@ -144,6 +148,31 @@ export const sectionSchema = z.discriminatedUnion('type', [
   }),
   z.object({ ...base, type: z.literal('rich_text'), headline: text(140), body: text(20000) }),
   z.object({ ...base, type: z.literal('quote'), text: text(300) }),
+  z.object({
+    ...base,
+    type: z.literal('image_break'),
+    media,
+    focal: z.string().regex(/^\d{1,3}% \d{1,3}%$/).default('50% 50%'),
+    quote: text(200),
+    caption: text(120),
+  }),
+  z.object({
+    ...base,
+    type: z.literal('collage'),
+    eyebrow: text(80),
+    headline: text(140),
+    body: text(500),
+    items: z.array(z.object({ media, caption: text(120) })).max(6).default([]),
+    link,
+  }),
+  z.object({
+    ...base,
+    type: z.literal('booking'),
+    eyebrow: text(80),
+    headline: text(140),
+    body: text(500),
+    note: text(300),
+  }),
 ])
 
 export const pageSchema = z.object({
@@ -173,7 +202,7 @@ export const storySchema = z.object({
   tags: z.array(z.string().max(30)).max(10).default([]),
   featured: z.boolean().default(false),
   gallery: z
-    .array(z.object({ media, caption: text(200), layout: z.enum(['full', 'half', 'offset']).default('full') }))
+    .array(z.object({ media, caption: text(200), layout: z.enum(['full', 'half', 'offset', 'chapter']).default('full') }))
     .max(80)
     .default([]),
   seoTitle: text(70),
@@ -232,6 +261,10 @@ export const settingsSchema = z.object({
   celebrationTypes: z.array(z.string().max(60)).max(12).default([]),
   budgetRanges: z.array(z.string().max(60)).max(12).default([]),
   inquiryRetentionMonths: z.number().int().min(0).max(120).default(0),
+  bookingEnabled: z.boolean().default(true),
+  bookingLeadDays: z.number().int().min(0).max(365).default(7),
+  bookingMonthsAhead: z.number().int().min(1).max(36).default(18),
+  bookingMessage: text(1000),
 })
 
 export const SCHEMAS = {

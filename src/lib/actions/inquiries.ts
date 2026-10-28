@@ -7,14 +7,29 @@ import { friendlyDbError, type ActionResult } from './result'
 const STATUSES = ['new', 'contacted', 'booked', 'closed'] as const
 export type InquiryStatus = (typeof STATUSES)[number]
 
-export async function setInquiryStatus(id: string, status: InquiryStatus): Promise<ActionResult> {
-  await requireAdmin()
+export async function setInquiryStatus(id: string, status: InquiryStatus): Promise<ActionResult<{ dateMarked?: string }>> {
+  const admin = await requireAdmin()
   if (!STATUSES.includes(status)) return { ok: false, error: 'Unknown status.' }
   const sb = await createSupabaseServer()
-  const { error } = await sb.from('inquiries').update({ status }).eq('id', id)
+  const { data, error } = await sb.from('inquiries').update({ status }).eq('id', id).select('wedding_date, full_name, partner_name').single()
   if (error) return { ok: false, error: friendlyDbError(error.message) }
+  // Booking confirmed: close that date on the public calendar (unless already marked)
+  let dateMarked: string | undefined
+  if (status === 'booked' && data?.wedding_date) {
+    const { data: existing } = await sb.from('availability').select('status').eq('day', data.wedding_date).maybeSingle()
+    if (!existing || existing.status !== 'booked') {
+      const who = [data.full_name, data.partner_name].filter(Boolean).join(' & ')
+      const { error: e2 } = await sb
+        .from('availability')
+        .upsert({ day: data.wedding_date, status: 'booked', note: `Booked: ${who}`.slice(0, 300), updated_by: admin.userId }, { onConflict: 'day' })
+      if (!e2) {
+        dateMarked = data.wedding_date
+        revalidatePath('/', 'layout')
+      }
+    }
+  }
   revalidatePath('/admin/inquiries')
-  return { ok: true }
+  return { ok: true, dateMarked }
 }
 
 export interface InquiryNote {

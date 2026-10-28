@@ -8,7 +8,9 @@ run() { psql -q -d eam_test -v ON_ERROR_STOP=1 -f "$1" 2>&1 | grep -v "does not 
 run supabase/tests/00_supabase_stub.sql
 run supabase/migrations/0001_schema.sql
 run supabase/migrations/0002_seed.sql
+run supabase/migrations/0003_booking.sql
 echo "-- re-running migrations to check they are safe to run twice"
 run supabase/migrations/0001_schema.sql
 run supabase/migrations/0002_seed.sql
+run supabase/migrations/0003_booking.sql
 psql -q -d eam_test -v ON_ERROR_STOP=1 -f supabase/tests/01_security_tests.sql 2>&1 | sed 's/^psql:[^:]*:[0-9]*: //'

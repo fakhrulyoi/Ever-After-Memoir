@@ -1,4 +1,8 @@
-export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+/** Project URL, tidied: no spaces, no trailing slash, no /rest/v1 style suffix pasted by mistake. */
+export const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
+  .trim()
+  .replace(/\/+$/, '')
+  .replace(/\/(rest|auth|storage)\/v1$/, '')
 // Supabase's Vercel integration names the public key ..._PUBLISHABLE_KEY; older setups use ..._ANON_KEY.
 export const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''

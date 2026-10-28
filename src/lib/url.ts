@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from './env'
 /** Links may be internal paths or http(s)/mailto/tel links. Blocks javascript: etc. */
 export function isSafeHref(href: string) {
   const h = href.trim()
@@ -7,7 +8,7 @@ export function isSafeHref(href: string) {
   return /^(https?:\/\/|mailto:|tel:)/i.test(h)
 }
 
-const STORAGE_PREFIX = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/`
+const STORAGE_PREFIX = `${SUPABASE_URL}/storage/v1/object/public/`
 
 /** Media URLs: bundled files (/brand, /samples), https files, or files in your Supabase storage. */
 export function isSafeMediaUrl(url: string) {

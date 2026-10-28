@@ -117,31 +117,52 @@ async function resolveMedia<T>(value: T, source: Source): Promise<T> {
 // ---------------------------------------------------------------------------
 // Loaders
 // ---------------------------------------------------------------------------
+/**
+ * Load from Supabase. If Supabase isn't set up, use the built-in content. If a
+ * load fails while the site is being built (e.g. the database tables aren't
+ * created yet), build with the built-in content and pick up the database on the
+ * next refresh. At runtime a failure is thrown, so the last good page stays live.
+ */
+const BUILDING = process.env.NEXT_PHASE === 'phase-production-build'
+async function load<T>(what: string, fallback: () => T, run: () => Promise<T>): Promise<T> {
+  if (!isSupabaseConfigured) return fallback()
+  try {
+    return await run()
+  } catch (e) {
+    if (!BUILDING) throw e
+    console.warn(`[build] ${what}: using built-in content (${e instanceof Error ? e.message : e})`)
+    return fallback()
+  }
+}
+
 const fallbackStories = (): Published<StoryContent>[] =>
   DEFAULT_STORIES.map(({ id, ...content }, i) => ({ id, content, sortOrder: i, publishedAt: null }))
 
-export const getSettings = cache(async (source: Source = 'published'): Promise<SettingsContent> => {
-  if (!isSupabaseConfigured) return DEFAULT_SETTINGS
-  const rows = await fetchRows('site_settings', source)
-  if (!rows[0]) return DEFAULT_SETTINGS
-  const content = normalize('site_settings', source === 'draft' ? rows[0].draft : rows[0].published, DEFAULT_SETTINGS)
-  return resolveMedia(content, source)
-})
+export const getSettings = cache((source: Source = 'published'): Promise<SettingsContent> =>
+  load('settings', () => DEFAULT_SETTINGS, async () => {
+    const rows = await fetchRows('site_settings', source)
+    if (!rows[0]) return DEFAULT_SETTINGS
+    const content = normalize('site_settings', source === 'draft' ? rows[0].draft : rows[0].published, DEFAULT_SETTINGS)
+    return resolveMedia(content, source)
+  }),
+)
 
-export const getPage = cache(async (slug: PageSlug, source: Source = 'published'): Promise<PageContent | null> => {
-  if (!isSupabaseConfigured) return DEFAULT_PAGES[slug]
-  const rows = await fetchRows('pages', source, slug)
-  if (!rows[0]) return null
-  const content = normalize('pages', source === 'draft' ? rows[0].draft : rows[0].published, DEFAULT_PAGES[slug])
-  return resolveMedia(content, source)
-})
+export const getPage = cache((slug: PageSlug, source: Source = 'published'): Promise<PageContent | null> =>
+  load(`page ${slug}`, () => DEFAULT_PAGES[slug], async () => {
+    const rows = await fetchRows('pages', source, slug)
+    if (!rows[0]) return null
+    const content = normalize('pages', source === 'draft' ? rows[0].draft : rows[0].published, DEFAULT_PAGES[slug])
+    return resolveMedia(content, source)
+  }),
+)
 
-export const listStories = cache(async (source: Source = 'published'): Promise<Published<StoryContent>[]> => {
-  if (!isSupabaseConfigured) return fallbackStories()
-  const rows = await fetchRows('stories', source)
-  const items = toPublished('stories', rows, source, DEFAULT_STORIES[0]).filter((s) => s.content.slug)
-  return resolveMedia(items, source)
-})
+export const listStories = cache((source: Source = 'published'): Promise<Published<StoryContent>[]> =>
+  load('stories', fallbackStories, async () => {
+    const rows = await fetchRows('stories', source)
+    const items = toPublished('stories', rows, source, DEFAULT_STORIES[0]).filter((s) => s.content.slug)
+    return resolveMedia(items, source)
+  }),
+)
 
 export const getStory = cache(async (slug: string, source: Source = 'published') => {
   const stories = await listStories(source)
@@ -150,42 +171,52 @@ export const getStory = cache(async (slug: string, source: Source = 'published')
   return { story: stories[index], next: stories.length > 1 ? stories[(index + 1) % stories.length] : null }
 })
 
-export const listServices = cache(async (source: Source = 'published'): Promise<Published<ServiceContent>[]> => {
-  if (!isSupabaseConfigured)
-    return DEFAULT_SERVICES.map(({ id, ...content }, i) => ({ id, content, sortOrder: i, publishedAt: null }))
-  const rows = await fetchRows('services', source)
-  return resolveMedia(toPublished('services', rows, source, DEFAULT_SERVICES[0]), source)
-})
+export const listServices = cache((source: Source = 'published'): Promise<Published<ServiceContent>[]> =>
+  load(
+    'services',
+    () => DEFAULT_SERVICES.map(({ id, ...content }, i) => ({ id, content, sortOrder: i, publishedAt: null })),
+    async () => {
+      const rows = await fetchRows('services', source)
+      return resolveMedia(toPublished('services', rows, source, DEFAULT_SERVICES[0]), source)
+    },
+  ),
+)
 
-export const listTestimonials = cache(async (source: Source = 'published'): Promise<Published<TestimonialContent>[]> => {
-  if (!isSupabaseConfigured) return []
-  const rows = await fetchRows('testimonials', source)
-  const fallback: TestimonialContent = { displayName: '', text: '', weddingDate: '', location: '', photo: null, consentConfirmed: false }
-  const items = toPublished('testimonials', rows, source, fallback)
-  // Never show a testimonial without the couple's approval, even in preview.
-  return resolveMedia(items.filter((t) => t.content.consentConfirmed && t.content.text), source)
-})
+export const listTestimonials = cache((source: Source = 'published'): Promise<Published<TestimonialContent>[]> =>
+  load('testimonials', () => [], async () => {
+    const rows = await fetchRows('testimonials', source)
+    const fallback: TestimonialContent = { displayName: '', text: '', weddingDate: '', location: '', photo: null, consentConfirmed: false }
+    const items = toPublished('testimonials', rows, source, fallback)
+    // Never show a testimonial without the couple's approval, even in preview.
+    return resolveMedia(items.filter((t) => t.content.consentConfirmed && t.content.text), source)
+  }),
+)
 
-export const listSocial = cache(async (source: Source = 'published'): Promise<Published<SocialItemContent>[]> => {
-  if (!isSupabaseConfigured)
-    return DEFAULT_SOCIAL.map(({ id, ...content }, i) => ({ id, content, sortOrder: i, publishedAt: null }))
-  const rows = await fetchRows('social_items', source)
-  return resolveMedia(toPublished('social_items', rows, source, DEFAULT_SOCIAL[0]), source)
-})
+export const listSocial = cache((source: Source = 'published'): Promise<Published<SocialItemContent>[]> =>
+  load(
+    'social',
+    () => DEFAULT_SOCIAL.map(({ id, ...content }, i) => ({ id, content, sortOrder: i, publishedAt: null })),
+    async () => {
+      const rows = await fetchRows('social_items', source)
+      return resolveMedia(toPublished('social_items', rows, source, DEFAULT_SOCIAL[0]), source)
+    },
+  ),
+)
 
 /** Upcoming dates marked booked / limited / unavailable. Visitors never see the private note. */
-export const getAvailability = cache(async (source: Source = 'published'): Promise<AvailabilityDay[]> => {
-  if (!isSupabaseConfigured) return []
-  const sb = await client(source)
-  const { data, error } = await sb
-    .from('availability')
-    .select('day, status')
-    .gte('day', todayISO())
-    .order('day', { ascending: true })
-    .limit(2000)
-  if (error) throw new Error(`Could not load availability: ${error.message}`)
-  return (data ?? []) as AvailabilityDay[]
-})
+export const getAvailability = cache((source: Source = 'published'): Promise<AvailabilityDay[]> =>
+  load('availability', () => [], async () => {
+    const sb = await client(source)
+    const { data, error } = await sb
+      .from('availability')
+      .select('day, status')
+      .gte('day', todayISO())
+      .order('day', { ascending: true })
+      .limit(2000)
+    if (error) throw new Error(`Could not load availability: ${error.message}`)
+    return (data ?? []) as AvailabilityDay[]
+  }),
+)
 
 /** Everything a page needs to render its sections. */
 export const getSiteData = cache(async (source: Source = 'published'): Promise<SiteData> => {

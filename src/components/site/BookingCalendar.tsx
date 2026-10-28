@@ -5,20 +5,19 @@ import { bookingRange, bookingSchema, dayState, isBookable, type DayState } from
 import type { AvailabilityStatus, BookingSection } from '@/lib/content/types'
 import type { SiteData } from '@/lib/data/site'
 import { addDays, addMonths, daysInMonth, formatLong, formatMonth, monthStart, todayISO, weekdayMon } from '@/lib/dates'
+import { WEEKDAYS, tErr, type Lang, type UIKey } from '@/lib/i18n'
 import { fieldErrors } from '@/lib/inquiry'
 import { Paragraphs, Rich } from '@/lib/text'
 import { EASE } from '../motion/MotionProvider'
-import { Reveal } from '../motion/Reveal'
-import { SiteLink, useSite } from './context'
+import { SiteLink, useSite, useT } from './context'
 import { IconArrow, IconWhatsApp } from './icons'
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const STATE_LABEL: Record<DayState, string> = {
-  available: 'available',
-  limited: 'few slots left',
-  booked: 'booked',
-  unavailable: 'not available',
-  outside: 'not open for booking',
+const STATE_LABEL: Record<DayState, UIKey> = {
+  available: 'book.state.available',
+  limited: 'book.state.limited',
+  booked: 'book.state.booked',
+  unavailable: 'book.state.unavailable',
+  outside: 'book.state.outside',
 }
 
 type Errors = Partial<Record<string, string>>
@@ -34,7 +33,9 @@ function Month({
   onPick,
   onKey,
   level = 'h3',
+  lang,
 }: {
+  lang: Lang
   level?: 'h2' | 'h3'
   month: string
   states: (day: string) => DayState
@@ -47,16 +48,17 @@ function Month({
   const lead = weekdayMon(month)
   const days = Array.from({ length: total }, (_, i) => addDays(month, i))
   const open = days.filter((d) => isBookable(states(d))).length
+  const t = useT()
   return (
     <div className="min-w-0">
-      <div className="mb-5 flex items-baseline justify-between gap-4">
-        <MonthHeading level={level}>{formatMonth(month)}</MonthHeading>
-        <p className="meta">{open > 0 ? `${open} ${open === 1 ? 'date' : 'dates'} open` : 'Fully booked'}</p>
+      <div className="mb-4 flex items-baseline justify-between gap-4 md:mb-5">
+        <MonthHeading level={level}>{formatMonth(month, lang)}</MonthHeading>
+        <p className="meta">{open > 1 ? t('book.open', { n: open }) : open === 1 ? t('book.open1') : t('book.full')}</p>
       </div>
-      <div role="group" aria-label={formatMonth(month)} className="grid grid-cols-7 gap-1">
-        {WEEKDAYS.map((w) => (
-          <span key={w} aria-hidden className="pb-2 text-center text-xs font-medium text-ink-soft">
-            {w.slice(0, 2)}
+      <div role="group" aria-label={formatMonth(month, lang)} className="grid grid-cols-7 gap-1">
+        {WEEKDAYS[lang].map((w) => (
+          <span key={w} aria-hidden className="pb-2 text-center text-[0.8125rem] font-medium text-ink-soft">
+            {w}
           </span>
         ))}
         {Array.from({ length: lead }).map((_, i) => <span key={`e${i}`} aria-hidden />)}
@@ -72,10 +74,10 @@ function Month({
                   disabled={!ok}
                   tabIndex={d === focusDay ? 0 : -1}
                   aria-pressed={isSel}
-                  aria-label={`${formatLong(d)}, ${STATE_LABEL[st]}`}
+                  aria-label={`${formatLong(d, lang)}, ${t(STATE_LABEL[st])}`}
                   onClick={() => onPick(d)}
                   onKeyDown={(e) => onKey(e, d)}
-                  className={`relative flex aspect-square w-full items-center justify-center rounded-full text-[0.9375rem] tabular-nums transition-[background-color,color,box-shadow] duration-300 ${
+                  className={`relative flex aspect-square w-full items-center justify-center rounded-full text-[1rem] tabular-nums transition-[background-color,color,box-shadow] duration-300 ${
                     isSel
                       ? 'bg-olive-deep font-semibold text-ivory'
                       : st === 'available'
@@ -102,12 +104,13 @@ function Month({
 
 function MonthHeading({ level, children }: { level: 'h2' | 'h3'; children: ReactNode }) {
   const H = level
-  return <H className="display text-[1.9rem] leading-none text-olive-deep">{children}</H>
+  return <H className="display text-[1.75rem] leading-none text-olive-deep md:text-[1.9rem]">{children}</H>
 }
 
 export function BookingCalendar({ s, data, first = true }: { s: BookingSection; data: SiteData; first?: boolean }) {
   const Heading = first ? 'h1' : 'h2'
-  const { settings, preview } = useSite()
+  const { settings, preview, lang } = useSite()
+  const t = useT()
   const today = todayISO()
   const range = useMemo(
     () => bookingRange({ leadDays: settings.bookingLeadDays, monthsAhead: settings.bookingMonthsAhead }, today),
@@ -191,7 +194,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     focusAfterRender.current = target
   }
 
-  const services = [...data.services.filter((x) => x.content.kind === 'service').map((x) => x.content.name), 'Not sure yet']
+  const services = [...data.services.filter((x) => x.content.kind === 'service').map((x) => x.content.name), t('form.notSure')]
   const needsEmail = !settings.whatsappNumber
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -199,7 +202,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     if (!selected) return
     if (preview) {
       setStatus('error')
-      setMessage('Booking is switched off in preview so no test bookings are created.')
+      setMessage(t('book.preview'))
       return
     }
     const fd = new FormData(e.currentTarget)
@@ -215,10 +218,11 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
       consent: fd.get('consent') === 'on',
       website: String(fd.get('website') ?? ''),
       startedAt: startedAt.current,
+      lang,
     }
     const parsed = bookingSchema.safeParse(payload)
     const errs: Errors = parsed.success ? {} : fieldErrors(parsed.error as never)
-    if (needsEmail && !payload.email) errs.email = 'Please add your email so we can reply'
+    if (needsEmail && !payload.email) errs.email = 'err.emailNeeded'
     if (Object.keys(errs).length) {
       setErrors(errs)
       e.currentTarget.querySelector<HTMLElement>(`[name="${Object.keys(errs)[0]}"]`)?.focus()
@@ -237,10 +241,10 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
       }
       if (body.fieldErrors) setErrors(body.fieldErrors)
       setStatus('error')
-      setMessage(body.error ?? 'Your booking was not sent. Please try again.')
+      setMessage(body.error ?? t('book.failed'))
     } catch {
       setStatus('error')
-      setMessage('Your booking was not sent. Check your connection and try again.')
+      setMessage(t('book.offline'))
     }
   }
 
@@ -251,43 +255,47 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     'aria-describedby': errors[name] ? `bk-${name}-error` : undefined,
   })
   const Err = ({ name }: { name: string }) =>
-    errors[name] ? <p id={`bk-${name}-error`} className="mt-1.5 text-[0.8125rem] text-danger" role="alert">{errors[name]}</p> : null
+    errors[name] ? <p id={`bk-${name}-error`} className="mt-1.5 text-[0.875rem] text-danger" role="alert">{tErr(lang, errors[name])}</p> : null
 
   const selState = selected ? states(selected) : null
 
+  const legend = (
+    <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[0.875rem] lg:flex-col lg:gap-3 lg:text-[0.9375rem]" aria-label={t('book.key')}>
+      <li className="flex items-center gap-2 lg:gap-3"><span className="flex h-7 w-7 items-center justify-center text-sm lg:h-8 lg:w-8">14</span> {t('book.available')}</li>
+      <li className="flex items-center gap-2 lg:gap-3"><span className="relative flex h-7 w-7 items-center justify-center text-sm lg:h-8 lg:w-8">14<span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-olive" /></span> {t('book.limited')}</li>
+      <li className="flex items-center gap-2 lg:gap-3"><span className="flex h-7 w-7 items-center justify-center text-sm text-ink-soft line-through decoration-ink-soft/60 lg:h-8 lg:w-8">14</span> {t('book.booked')}</li>
+      <li className="flex items-center gap-2 lg:gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-olive-deep text-sm font-semibold text-ivory lg:h-8 lg:w-8">14</span> {t('book.yours')}</li>
+    </ul>
+  )
+
   return (
-    <section id="book" className={`scroll-mt-20 ${first ? 'pb-24 pt-36 md:pb-32 md:pt-48' : 'section-y'}`}>
-      <div className="shell grid gap-14 lg:grid-cols-12">
+    <section id="book" data-hide-bookbar className={`scroll-mt-20 ${first ? 'pb-16 pt-28 md:pb-32 md:pt-48' : 'section-y'}`}>
+      <div className="shell grid gap-8 lg:grid-cols-12 lg:gap-14">
         <div className="lg:col-span-4">
-          {s.eyebrow && <Reveal><p className="kicker mb-8">{s.eyebrow}</p></Reveal>}
-          <Heading className="display text-[clamp(2.6rem,4.6vw,4.75rem)] leading-[1.02] text-olive-deep"><Rich text={s.headline} /></Heading>
-          <Reveal delay={0.2} className="mt-8 space-y-4">
+          {s.eyebrow && <p className="kicker fade-in mb-4 md:mb-8">{s.eyebrow}</p>}
+          <Heading className="display text-[clamp(2.5rem,4.6vw,4.75rem)] leading-[1.02] text-olive-deep"><Rich text={s.headline} /></Heading>
+          <div className="fade-up mt-4 space-y-4 md:mt-8" style={{ animationDelay: '0.15s' }}>
             <Paragraphs text={s.body} className="lede" />
-          </Reveal>
-          <ul className="mt-10 space-y-3 text-[0.9375rem]" aria-label="Calendar key">
-            <li className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center text-sm">14</span> Available</li>
-            <li className="flex items-center gap-3"><span className="relative flex h-8 w-8 items-center justify-center text-sm">14<span className="absolute bottom-1 h-1 w-1 rounded-full bg-olive" /></span> Few slots left</li>
-            <li className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center text-sm text-ink-soft line-through decoration-ink-soft/60">14</span> Booked</li>
-            <li className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-olive-deep text-sm font-semibold text-ivory">14</span> Your date</li>
-          </ul>
-          {s.note && <p className="mt-8 max-w-sm text-sm text-ink-soft">{s.note}</p>}
+          </div>
+          <div className="mt-10 hidden lg:block">{legend}</div>
+          {s.note && <p className="mt-8 hidden max-w-sm text-sm text-ink-soft lg:block">{s.note}</p>}
         </div>
 
-        <div className="lg:col-span-8">
+        <div className="-mx-[clamp(1rem,4.5vw,4rem)] sm:mx-0 lg:col-span-8">
           {!settings.bookingEnabled ? (
             <div className="bg-cream p-8 md:p-12">
-              <p className="display display-sm text-olive-deep">Online booking is paused right now.</p>
-              <p className="lede mt-4">Please send us an inquiry below and we’ll reply with available dates.</p>
+              <p className="display display-sm text-olive-deep">{t('book.paused')}</p>
+              <p className="lede mt-4">{t('book.pausedBody')}</p>
             </div>
           ) : (
-            <div className="bg-cream p-5 sm:p-8 md:p-10">
-              <div className="mb-6 flex items-center justify-between">
-                <p className="text-sm text-ink-soft">Choose your wedding date</p>
+            <div className="bg-cream px-4 py-6 sm:p-8 md:p-10">
+              <div className="mb-5 flex items-center justify-between md:mb-6">
+                <p className="text-[0.9375rem] text-ink-soft">{t('book.choose')}</p>
                 <div className="flex gap-1">
-                  <button type="button" onClick={() => go(-1)} disabled={view <= firstMonth} className="flex h-11 w-11 items-center justify-center rounded-full text-olive-deep transition-colors hover:bg-ivory disabled:opacity-30" aria-label="Previous month">
+                  <button type="button" onClick={() => go(-1)} disabled={view <= firstMonth} className="flex h-11 w-11 items-center justify-center rounded-full text-olive-deep transition-colors hover:bg-ivory disabled:opacity-30" aria-label={t('book.prevMonth')}>
                     <IconArrow dir="left" size={20} />
                   </button>
-                  <button type="button" onClick={() => go(1)} disabled={addMonths(view, 1) > lastMonth} className="flex h-11 w-11 items-center justify-center rounded-full text-olive-deep transition-colors hover:bg-ivory disabled:opacity-30" aria-label="Next month">
+                  <button type="button" onClick={() => go(1)} disabled={addMonths(view, 1) > lastMonth} className="flex h-11 w-11 items-center justify-center rounded-full text-olive-deep transition-colors hover:bg-ivory disabled:opacity-30" aria-label={t('book.nextMonth')}>
                     <IconArrow size={20} />
                   </button>
                 </div>
@@ -301,16 +309,20 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
                     initial={{ opacity: 0, x: dir * 40 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: dir * -40 }}
-                    transition={{ duration: 0.45, ease: EASE }}
+                    transition={{ duration: 0.4, ease: EASE }}
                   >
-                    <Month month={view} states={states} selected={selected} focusDay={focusDay} onPick={pick} onKey={onKey} level={first ? 'h2' : 'h3'} />
+                    <Month lang={lang} month={view} states={states} selected={selected} focusDay={focusDay} onPick={pick} onKey={onKey} level={first ? 'h2' : 'h3'} />
                     <div className="hidden md:block">
                       {addMonths(view, 1) <= lastMonth && (
-                        <Month month={addMonths(view, 1)} states={states} selected={selected} focusDay={focusDay} onPick={pick} onKey={onKey} level={first ? 'h2' : 'h3'} />
+                        <Month lang={lang} month={addMonths(view, 1)} states={states} selected={selected} focusDay={focusDay} onPick={pick} onKey={onKey} level={first ? 'h2' : 'h3'} />
                       )}
                     </div>
                   </m.div>
                 </AnimatePresence>
+              </div>
+              <div className="mt-6 border-t border-charcoal/10 pt-5 lg:hidden">
+                {legend}
+                {s.note && <p className="mt-4 text-[0.875rem] text-ink-soft">{s.note}</p>}
               </div>
 
               <div ref={detailsRef} aria-live="polite">
@@ -325,88 +337,88 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
                       className="overflow-hidden"
                     >
                       <div className="mt-10 border-t border-charcoal/15 pt-8">
-                        <p className="meta">{selState === 'limited' ? 'Few slots left' : 'Available'}</p>
+                        <p className="meta">{selState === 'limited' ? t('book.limited') : t('book.available')}</p>
                         <m.p key={selected} className="display mt-1 text-[clamp(1.75rem,3.4vw,2.75rem)] leading-tight text-olive-deep" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }}>
-                          {formatLong(selected)}
+                          {formatLong(selected, lang)}
                         </m.p>
 
                         {status === 'done' ? (
                           <div className="mt-6 space-y-4" role="status">
                             {waUrl ? (
                               <>
-                                <p className="lede">Opening WhatsApp so you can send us your booking…</p>
-                                <a href={waUrl} className="btn btn-solid"><IconWhatsApp size={18} /> Open WhatsApp</a>
+                                <p className="lede">{t('book.opening')}</p>
+                                <a href={waUrl} className="btn btn-solid"><IconWhatsApp size={18} /> {t('book.openWa')}</a>
                               </>
                             ) : (
-                              <p className="lede">Thank you — we have your booking request and will reply to your email soon.</p>
+                              <p className="lede">{t('book.thanksEmail')}</p>
                             )}
                           </div>
                         ) : (
                           <form onSubmit={submit} noValidate className="relative mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
                             <div>
-                              <label htmlFor="bk-fullName" className="block text-[0.8125rem] font-medium text-ink-soft">Your name <span className="text-olive" aria-hidden>*</span></label>
+                              <label htmlFor="bk-fullName" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.name')} <span className="text-olive" aria-hidden>*</span></label>
                               <input {...aria('fullName')} autoComplete="name" className={inputCls} />
                               <Err name="fullName" />
                             </div>
                             <div>
-                              <label htmlFor="bk-partnerName" className="block text-[0.8125rem] font-medium text-ink-soft">Partner’s name <span className="font-normal">(optional)</span></label>
+                              <label htmlFor="bk-partnerName" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.partner')} <span className="font-normal">{t('form.optional')}</span></label>
                               <input {...aria('partnerName')} className={inputCls} />
                             </div>
                             <div>
-                              <label htmlFor="bk-celebrationType" className="block text-[0.8125rem] font-medium text-ink-soft">Type of celebration <span className="text-olive" aria-hidden>*</span></label>
+                              <label htmlFor="bk-celebrationType" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.type')} <span className="text-olive" aria-hidden>*</span></label>
                               <select {...aria('celebrationType')} defaultValue="" className={`${inputCls} appearance-none`}>
-                                <option value="" disabled>Choose one</option>
+                                <option value="" disabled>{t('form.choose')}</option>
                                 {settings.celebrationTypes.map((c) => <option key={c}>{c}</option>)}
                               </select>
                               <Err name="celebrationType" />
                             </div>
                             <div>
-                              <label htmlFor="bk-serviceInterest" className="block text-[0.8125rem] font-medium text-ink-soft">Service <span className="text-olive" aria-hidden>*</span></label>
+                              <label htmlFor="bk-serviceInterest" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.service')} <span className="text-olive" aria-hidden>*</span></label>
                               <select {...aria('serviceInterest')} defaultValue="" className={`${inputCls} appearance-none`}>
-                                <option value="" disabled>Choose one</option>
+                                <option value="" disabled>{t('form.choose')}</option>
                                 {services.map((c) => <option key={c}>{c}</option>)}
                               </select>
                               <Err name="serviceInterest" />
                             </div>
                             <div className="sm:col-span-2">
-                              <label htmlFor="bk-location" className="block text-[0.8125rem] font-medium text-ink-soft">Location or venue <span className="text-olive" aria-hidden>*</span></label>
-                              <input {...aria('location')} className={inputCls} placeholder="e.g. Kuantan, or the name of the hall" />
+                              <label htmlFor="bk-location" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.location')} <span className="text-olive" aria-hidden>*</span></label>
+                              <input {...aria('location')} className={inputCls} placeholder={t('book.locationHint')} />
                               <Err name="location" />
                             </div>
                             {needsEmail && (
                               <div className="sm:col-span-2">
-                                <label htmlFor="bk-email" className="block text-[0.8125rem] font-medium text-ink-soft">Email <span className="text-olive" aria-hidden>*</span></label>
+                                <label htmlFor="bk-email" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.email')} <span className="text-olive" aria-hidden>*</span></label>
                                 <input {...aria('email')} type="email" autoComplete="email" className={inputCls} />
                                 <Err name="email" />
                               </div>
                             )}
                             <div className="sm:col-span-2">
-                              <label htmlFor="bk-notes" className="block text-[0.8125rem] font-medium text-ink-soft">Anything we should know? <span className="font-normal">(optional)</span></label>
+                              <label htmlFor="bk-notes" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.notes')} <span className="font-normal">{t('form.optional')}</span></label>
                               <textarea {...aria('notes')} rows={2} className={`${inputCls} resize-y`} />
                               <Err name="notes" />
                             </div>
                             <div className="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden>
-                              <label htmlFor="bk-website">Leave this empty</label>
+                              <label htmlFor="bk-website">{t('form.honeypot')}</label>
                               <input id="bk-website" name="website" tabIndex={-1} autoComplete="off" />
                             </div>
                             <div className="sm:col-span-2">
-                              <label className="flex cursor-pointer items-start gap-3 text-sm text-ink-soft">
-                                <input type="checkbox" name="consent" className="mt-0.5 h-4 w-4 shrink-0 accent-olive-deep" aria-invalid={errors.consent ? true : undefined} aria-describedby={errors.consent ? 'bk-consent-error' : undefined} />
-                                <span>I agree to Ever After Memoir keeping these details to reply. <SiteLink href="/privacy" className="underline underline-offset-4">Privacy policy</SiteLink>.</span>
+                              <label className="flex cursor-pointer items-start gap-3 text-[0.9375rem] text-ink-soft">
+                                <input type="checkbox" name="consent" className="mt-0.5 h-5 w-5 shrink-0 accent-olive-deep" aria-invalid={errors.consent ? true : undefined} aria-describedby={errors.consent ? 'bk-consent-error' : undefined} />
+                                <span>{t('book.consent')} <SiteLink href="/privacy" className="underline underline-offset-4">{t('form.privacy')}</SiteLink>.</span>
                               </label>
                               <Err name="consent" />
                             </div>
                             <div className="flex flex-col items-start gap-3 sm:col-span-2">
-                              <button type="submit" className="btn btn-solid" disabled={status === 'sending'} aria-busy={status === 'sending'}>
+                              <button type="submit" className="btn btn-solid w-full sm:w-auto" disabled={status === 'sending'} aria-busy={status === 'sending'}>
                                 {status === 'sending' ? (
-                                  <><span className="h-4 w-4 animate-spin rounded-full border border-ivory/40 border-t-ivory" aria-hidden /> Sending…</>
+                                  <><span className="h-4 w-4 animate-spin rounded-full border border-ivory/40 border-t-ivory" aria-hidden /> {t('form.sending')}</>
                                 ) : needsEmail ? (
-                                  'Send booking request'
+                                  t('book.send')
                                 ) : (
-                                  <><IconWhatsApp size={18} /> Continue on WhatsApp</>
+                                  <><IconWhatsApp size={18} /> {t('book.continue')}</>
                                 )}
                               </button>
-                              {!needsEmail && <p className="text-xs text-ink-soft">WhatsApp opens with your details filled in. Just press send.</p>}
+                              {!needsEmail && <p className="text-[0.875rem] text-ink-soft">{t('book.waHint')}</p>}
                               {status === 'error' && message && <p className="text-[0.9375rem] text-danger" role="alert">{message}</p>}
                             </div>
                           </form>

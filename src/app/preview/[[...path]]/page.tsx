@@ -21,10 +21,12 @@ export default async function PreviewPage({
   searchParams: Promise<{ live?: string }>
 }) {
   await requireAdmin('/preview')
-  const path = (await params).path ?? []
+  const all = (await params).path ?? []
+  const lang = all[0] === 'ms' ? 'ms' : 'en'
+  const path = lang === 'ms' ? all.slice(1) : all
   const live = (await searchParams).live === '1'
-  if (path.length === 2 && path[0] === 'stories') return <StoryPageView slug={path[1]} source="draft" />
+  if (path.length === 2 && path[0] === 'stories') return <StoryPageView slug={path[1]} source="draft" lang={lang} />
   const slug = PAGES[path.join('/')]
   if (!slug || path.length > 1) notFound()
-  return <PageView slug={slug} source="draft" live={live} />
+  return <PageView slug={slug} source="draft" live={live} lang={lang} />
 }

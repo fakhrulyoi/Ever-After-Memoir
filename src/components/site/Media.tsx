@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import type { MediaRef } from '@/lib/content/types'
 import { IconExpand, IconMute, IconPause, IconPlay, IconSound } from './icons'
+import { useT } from './context'
 
 /** Optimised (resized, WebP/AVIF) URL for a video poster image. */
 export function posterUrl(url: string | null | undefined, width = 1280) {
@@ -149,6 +150,7 @@ export function VideoPlayer({
 }) {
   const ref = useRef<HTMLVideoElement>(null)
   const wrap = useRef<HTMLDivElement>(null)
+  const t = useT()
   const [started, setStarted] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -219,7 +221,7 @@ export function VideoPlayer({
           type="button"
           onClick={toggle}
           className="on-dark absolute inset-0 flex items-center justify-center bg-charcoal/25 transition-colors duration-700 hover:bg-charcoal/10"
-          aria-label={`Play ${title}`}
+          aria-label={t('video.play', { title })}
         >
           <span className="flex h-20 w-20 items-center justify-center rounded-full border border-ivory/80 text-ivory transition-transform duration-700 ease-[var(--ease-film)] group-hover:scale-110 md:h-28 md:w-28">
             <IconPlay size={26} />
@@ -229,17 +231,17 @@ export function VideoPlayer({
       {loading && started && !failed && (
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center" role="status">
           <span className="h-10 w-10 animate-spin rounded-full border border-ivory/30 border-t-ivory" />
-          <span className="sr-only">Loading video</span>
+          <span className="sr-only">{t('video.loading')}</span>
         </span>
       )}
       {failed && (
         <p className="absolute inset-0 flex items-center justify-center bg-charcoal/70 p-6 text-center text-sm text-ivory" role="alert">
-          This film could not be loaded. Please try again later.
+          {t('video.failed')}
         </p>
       )}
       {started && !failed && (
         <div className="on-dark absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-charcoal/70 to-transparent px-4 pb-3 pt-10 text-ivory opacity-100 transition-opacity duration-500 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-          <button type="button" onClick={toggle} className="p-2" aria-label={playing ? 'Pause' : 'Play'}>
+          <button type="button" onClick={toggle} className="p-2" aria-label={playing ? t('reels.pause') : t('reels.play')}>
             {playing ? <IconPause size={18} /> : <IconPlay size={18} />}
           </button>
           <input
@@ -249,18 +251,18 @@ export function VideoPlayer({
             value={duration ? Math.round((time / duration) * 1000) : 0}
             onChange={(e) => seek(Number(e.target.value) / 1000)}
             className="h-px flex-1 cursor-pointer appearance-none bg-ivory/40 accent-ivory"
-            aria-label="Seek"
+            aria-label={t('video.seek')}
           />
           <span className="meta w-20 text-right">{fmt(time)} / {fmt(duration)}</span>
           <button
             type="button"
             onClick={() => { const v = ref.current; if (v) { v.muted = !v.muted; setMuted(v.muted) } }}
             className="p-2"
-            aria-label={muted ? 'Unmute' : 'Mute'}
+            aria-label={muted ? t('reels.unmute') : t('reels.mute')}
           >
             {muted ? <IconMute size={18} /> : <IconSound size={18} />}
           </button>
-          <button type="button" onClick={fullscreen} className="p-2" aria-label="Full screen">
+          <button type="button" onClick={fullscreen} className="p-2" aria-label={t('video.fullscreen')}>
             <IconExpand size={18} />
           </button>
         </div>

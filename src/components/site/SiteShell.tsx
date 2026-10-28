@@ -1,7 +1,8 @@
 'use client'
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import type { SettingsContent } from '@/lib/content/types'
+import { langFromPath, localize, stripLang, t } from '@/lib/i18n'
 import { MotionProvider } from '../motion/MotionProvider'
 import { SiteProvider } from './context'
 import { Nav } from './Nav'
@@ -15,7 +16,7 @@ function startsWithImage(path: string, heroPaths: string[]) {
 }
 
 export function SiteShell({
-  settings,
+  settings: raw,
   preview = false,
   heroPaths,
   children,
@@ -26,14 +27,23 @@ export function SiteShell({
   children: ReactNode
 }) {
   const prefix = preview ? '/preview' : ''
-  const path = usePathname().replace(/^\/preview/, '') || '/'
+  const full = usePathname()
+  const lang = langFromPath(full)
+  const path = stripLang(full.replace(/^\/preview/, '') || '/')
+  const settings = useMemo(() => localize(raw, lang), [raw, lang])
+  useEffect(() => {
+    document.documentElement.lang = lang
+    try {
+      localStorage.setItem('eam-lang', lang)
+    } catch {}
+  }, [lang])
   return (
-    <SiteProvider value={{ settings, prefix, preview }}>
+    <SiteProvider value={{ settings, prefix, preview, lang }}>
       <MotionProvider>
         <a href="#main" className="sr-only z-[100] bg-olive-deep px-4 py-3 text-ivory focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
-          Skip to content
+          {t(lang, 'skip')}
         </a>
-        <Nav overHero={startsWithImage(path, heroPaths)} />
+        <Nav overHero={startsWithImage(path, heroPaths)} path={path} />
         <main id="main" tabIndex={-1} className="outline-none">
           {children}
         </main>
@@ -42,7 +52,7 @@ export function SiteShell({
         <ViewCursor />
         <Intro />
         {!preview && <WhatsAppFloat />}
-        <MobileBookBar />
+        <MobileBookBar path={path} />
         {preview && <PreviewBanner />}
       </MotionProvider>
     </SiteProvider>

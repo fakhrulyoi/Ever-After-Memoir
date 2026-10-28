@@ -15,14 +15,17 @@ Website portfolio wedding content creator (tema olive green) dengan admin dashbo
 1. Buat projek di [supabase.com](https://supabase.com) → **New project**. Pilih region **Singapore** (paling dekat dengan Malaysia).
 2. **SQL Editor** → **New query**. Buka fail `supabase/migrations/0001_schema.sql`, salin semua, tampal, dan tekan **Run**.
 3. Buat query baru. Buka `supabase/migrations/0002_seed.sql`, salin, tampal dan **Run**. Ini isi kandungan permulaan (teks dari brief + gambar anda).
-4. Buat query baru lagi. Buka `supabase/migrations/0003_booking.sql`, salin, tampal dan **Run**. Ini untuk kalendar booking. **Ikut turutan 0001 → 0002 → 0003.**
-5. **Authentication → Sign In / Providers**:
+4. Buat query baru lagi. Buka `supabase/migrations/0003_booking.sql`, salin, tampal dan **Run**. Ini untuk kalendar booking.
+5. Akhir sekali `supabase/migrations/0004_refresh.sql` → **Run**. Ini masukkan video sebenar, teks Bahasa Melayu dan susunan homepage baru. Kandungan yang awak **dah edit dan simpan** di admin tidak disentuh. **Ikut turutan 0001 → 0002 → 0003 → 0004.**
+
+> Dah pernah jalankan 0001–0003? Cukup jalankan **0004** sahaja.
+6. **Authentication → Sign In / Providers**:
    - Pastikan **Email** dihidupkan.
    - **Matikan “Allow new users to sign up”**. Tiada sesiapa boleh daftar sendiri.
-6. **Authentication → URL Configuration**:
+7. **Authentication → URL Configuration**:
    - **Site URL**: alamat website anda (contoh `https://ever-after-memoir.vercel.app`).
    - **Redirect URLs**: tambah `https://ALAMAT-ANDA/auth/callback`. Jika ada domain sendiri nanti, tambah juga untuk domain itu.
-7. Cipta akaun admin pertama:
+8. Cipta akaun admin pertama:
    - **Authentication → Users → Add user → Create new user**. Masukkan email & password, dan tandakan **Auto Confirm User**.
    - Kembali ke **SQL Editor** dan jalankan (tukar emel):
      ```sql
@@ -30,7 +33,7 @@ Website portfolio wedding content creator (tema olive green) dengan admin dashbo
      select id from auth.users where email = 'emel-anda@contoh.com';
      ```
    Hanya akaun dalam `admin_users` boleh masuk admin. Akaun lain akan ditolak walaupun password betul.
-8. **Project Settings → API Keys**, salin:
+9. **Project Settings → API Keys**, salin:
    - **Project URL**
    - **anon / publishable key**: kunci awam, selamat diletak dalam browser.
    - **service_role / secret key**: **RAHSIA**. Jangan kongsi dan jangan letak dalam kod.
@@ -85,9 +88,10 @@ Buka `/admin`. Halaman **Overview** ada senarai “Before you launch”:
 
 - [ ] **Isi nombor WhatsApp di Settings & SEO** (format `60123456789`). Tanpa nombor ini, booking tak boleh terus ke WhatsApp — pasangan diminta isi emel sebagai ganti. Tiada nombor direka dalam kod.
 - [ ] Tanda tarikh yang sudah ditempah di **Availability**.
-- [ ] Gantikan 3 cerita sampel dengan majlis sebenar. Ia guna gambar anda tetapi bertanda “Sample story” sebab ceritanya contoh.
-- [ ] Gantikan film & reels sampel (dibuat dari gambar) dengan video sebenar di **Homepage → Films**.
-- [ ] Upload gambar asal resolusi tinggi (≥2000px). Gambar sekarang dari tangkapan Instagram/WhatsApp (±400–1200px), jadi nampak lembut di skrin besar.
+- [ ] Gantikan 3 cerita sampel dengan majlis sebenar. Ia guna gambar & video anda tetapi bertanda “Sample story” sebab ayatnya contoh.
+- [ ] Isi nama berdua di **Pages → About → Our team** (nama tak dipaparkan selagi kosong).
+- [ ] Tambah lebih banyak reels di **Homepage → Films & reels** (sampai 12). Video menegak MP4 di bawah 50 MB.
+- [ ] Upload gambar asal resolusi tinggi (≥2000px) untuk gambar lama yang dari tangkapan Instagram/WhatsApp.
 - [ ] Semak semula teks **Privacy policy**
 - [ ] Isi bahagian **About → About the founder** jika mahu (asalnya disembunyikan; tiada biodata direka)
 - [ ] Testimonial: tambah hanya kata-kata pasangan yang telah bersetuju. Toggle “approved” wajib sebelum publish.
@@ -113,6 +117,15 @@ Tips teks: dalam tajuk, `*perkataan*` jadi *italic* dan Enter jadi baris baru. D
 - Bila inquiry ditukar ke **Booked**, tarikhnya ditutup di kalendar secara automatik.
 - **Settings & SEO → Booking**: hidup/matikan booking, berapa hari notis minimum, berapa bulan ke depan, dan teks mesej WhatsApp. Placeholder: `{date}` (Bahasa Melayu), `{date_en}`, `{name}`, `{partner}`, `{type}`, `{service}`, `{location}`, `{notes}`, `{ref}`. Baris yang kosong dibuang sendiri.
 - Nota peribadi tarikh hanya admin nampak; awam cuma nampak status.
+
+**Dwibahasa (English / Bahasa Melayu)**:
+- English di `/`, Bahasa Melayu di `/ms` (contoh `/ms/contact`). Butang **EN | BM** di atas setiap halaman tukar bahasa halaman yang sama.
+- Dalam setiap editor admin ada suis **English | Bahasa Melayu** di atas. Pilih *Bahasa Melayu* untuk tulis versi BM bagi setiap teks. Teks BM yang dibiarkan kosong akan guna English.
+- Live preview & butang Preview ikut bahasa yang sedang diedit.
+- Mesej WhatsApp booking: versi English untuk pelawat English, versi BM (Settings → Bahasa Melayu) untuk pelawat BM. Tarikh pun ikut bahasa.
+- Nota: kalau susunan reels/galeri ditukar, semak semula kapsyen BM yang berkaitan.
+
+**Video**: video menegak dimainkan senyap bila kelihatan di skrin (fon) atau bila hover (desktop). Tekan untuk tonton skrin penuh dengan bunyi — macam IG Stories: tekan kanan/kiri untuk seterusnya/sebelum. Hero boleh campur gambar dan video pendek (5–8 saat).
 
 **Seksyen homepage baru**: *Reel* (gambar bertukar macam story, tekan & tahan untuk pause), *Image break* (gambar penuh dengan petikan), *Collage* (gambar bertaburan dengan parallax). Semua boleh disusun semula dengan drag, disembunyikan, atau dibuang. Pilih banyak gambar sekaligus dalam Media library.
 
@@ -160,8 +173,10 @@ Untuk emel reset password yang lebih dipercayai, set **Supabase → Authenticati
 | Ujian | Keputusan |
 |---|---|
 | Ujian keselamatan database (`supabase/tests`) — RLS, publish, media, inquiry, availability | ✅ 18/18 |
-| Ujian penerimaan end-to-end (`tests/e2e.py`) — 22 aliran dalam brief + booking → WhatsApp, pada stack Supabase tempatan (GoTrue + PostgREST + Postgres 16) | ✅ 23/23 |
+| Migrasi 0004 pada database lama — kandungan yang diedit kekal, yang belum diedit dikemas kini | ✅ |
+| Ujian penerimaan end-to-end (`tests/e2e.py`) — 22 aliran dalam brief + booking → WhatsApp + edit BM, EN & BM, pada stack Supabase tempatan (GoTrue + PostgREST + Postgres 16) | ✅ 24/24 |
 | Lighthouse (mobile) — Accessibility / Best Practices / SEO | 100 / 100 / 100 |
+| Panjang homepage di iPhone | ±10 skrin (dulu ±17) |
 | Lighthouse Performance (pelayan tempatan tanpa CDN) | 88–89 |
 | Had kadar borang (permintaan ke-6 dalam sejam) | ✅ ditolak (429) |
 
@@ -178,7 +193,7 @@ python3 tests/e2e.py
 
 Saya tak boleh buat bahagian ini sebab ia perlukan akaun anda:
 
-1. Cipta projek Supabase dan jalankan 3 fail SQL (bahagian 1)
+1. Cipta projek Supabase dan jalankan 4 fail SQL (bahagian 1)
 2. Cipta akaun admin (bahagian 1, langkah 6)
 3. Deploy ke Vercel & isi environment variables (bahagian 2)
 4. Isi nombor WhatsApp & tanda tarikh booked di admin
@@ -191,17 +206,19 @@ Nota pelan:
 ## 10. Struktur projek
 
 ```
-src/app/(site)/        laman awam (ISR, refresh automatik selepas publish)
+src/app/(site)/        laman awam English (ISR, refresh automatik selepas publish)
+src/app/(site)/ms/     laman awam Bahasa Melayu
 src/app/preview/       paparan draft (admin sahaja)
 src/app/admin/         admin dashboard
-src/app/api/inquiry/   terima borang (server)
+src/app/api/           terima borang & booking (server)
 src/components/site/   komponen & seksyen website + motion
 src/components/admin/  komponen admin (editor, media library, inbox)
 src/lib/               data, keselamatan, skema kandungan, server actions
+src/lib/i18n.ts        perkataan UI dalam dua bahasa
 supabase/migrations/   skema database + kandungan permulaan
 supabase/tests/        ujian keselamatan database
 tests/e2e.py           ujian penerimaan end-to-end
-public/samples/        gambar & video sampel (abstrak, original — gantikan)
+public/brand/          gambar & video Ever After Memoir
 ```
 
-Untuk tukar kandungan permulaan, edit `src/lib/content/defaults.ts`, kemudian jalankan `node scripts/generate-seed.mts`.
+Untuk tukar kandungan permulaan, edit `src/lib/content/defaults.ts`, kemudian jalankan `npm run seed:generate` (menjana 0002 dan 0004).

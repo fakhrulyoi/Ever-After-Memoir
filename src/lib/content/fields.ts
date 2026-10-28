@@ -20,6 +20,7 @@ export type FieldDef =
   | { kind: 'gallery'; key: string; label: string; help?: string }
   | { kind: 'slides'; key: string; label: string; help?: string; max: number }
   | { kind: 'collage'; key: string; label: string; help?: string }
+  | { kind: 'team'; key: string; label: string; help?: string }
   | { kind: 'heading'; label: string; help?: string }
 
 const HEADLINE_HELP = 'Press Enter for a new line. Wrap words in *stars* to make them italic.'
@@ -60,22 +61,22 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
         key: 'layout',
         label: 'Style',
         options: [
-          { value: 'reel', label: 'Reel — photos change one after another, like a story' },
+          { value: 'reel', label: 'Reel — photos and short videos change one after another, like a story' },
           { value: 'full', label: 'Full screen — one photo or a silent video behind the text' },
         ],
       },
       eyebrow,
       headline('Headline'),
       { kind: 'textarea', key: 'body', label: 'Short introduction', rows: 3, max: 500 },
-      { kind: 'slides', key: 'slides', label: 'Reel photos', max: 10, help: 'For the Reel style. Portrait photos at least 1000 px wide look best. Drag to change the order.' },
-      { kind: 'range', key: 'interval', label: 'Seconds per photo', min: 2, max: 12, step: 1 },
+      { kind: 'slides', key: 'slides', label: 'Reel photos and videos', max: 10, help: 'For the Reel style. Portrait photos at least 1000 px wide, or short vertical videos (5–8 seconds, no sound needed), look best. Drag to change the order.' },
+      { kind: 'range', key: 'interval', label: 'Seconds per slide', min: 2, max: 12, step: 1 },
       image('media', 'Full-screen photo'),
       { kind: 'media', key: 'video', label: 'Full-screen background video (optional)', accept: 'video', help: 'For the Full screen style. Plays silently on a loop.' },
       { kind: 'focal', key: 'focal', label: 'Focus point', mediaKey: 'media', help: 'Click the part of the photo that must always stay visible on phones.' },
       { kind: 'range', key: 'overlay', label: 'Darken photo for readability', min: 0, max: 0.8, step: 0.02, percent: true },
       { kind: 'link', key: 'primary', label: 'Main button' },
       { kind: 'link', key: 'secondary', label: 'Second link' },
-      { kind: 'toggle', key: 'showTimecode', label: 'Show the running film timecode' },
+      { kind: 'toggle', key: 'showTimecode', label: 'Show a running film timecode (large screens only)' },
     ],
   },
   philosophy: {
@@ -104,16 +105,17 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
   },
   films: {
     label: 'Films & reels',
-    description: 'A highlight film and a row of vertical reels.',
+    description: 'Your vertical reels in a swipeable row (they open full screen with sound), plus an optional wide highlight film.',
     pages: ['home', 'services', 'about'],
     fields: [
       eyebrow,
       headline(),
       body('Text', 3),
+      { kind: 'reels', key: 'reels', label: 'Vertical reels' },
+      { kind: 'heading', label: 'Wide highlight film (optional)', help: 'Leave empty if your films are vertical.' },
       { kind: 'media', key: 'film', label: 'Highlight film', accept: 'video', help: 'MP4 works best on every phone. Keep it under 50 MB.' },
       image('poster', 'Film cover image'),
       { kind: 'text', key: 'filmCaption', label: 'Caption under the film' },
-      { kind: 'reels', key: 'reels', label: 'Vertical reels' },
     ],
   },
   services_preview: {
@@ -214,6 +216,18 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
       { kind: 'textarea', key: 'privacyNote', label: 'Privacy note under the form', rows: 2 },
     ],
   },
+  team: {
+    label: 'Our team',
+    description: 'Introduce the people behind the camera. Members without a name are hidden.',
+    pages: ['about', 'home'],
+    single: true,
+    fields: [
+      eyebrow,
+      headline(),
+      body('Introduction', 3),
+      { kind: 'team', key: 'members', label: 'Team members', help: 'Only your own words — nothing is filled in for you. A member appears on the website once you add their name.' },
+    ],
+  },
   rich_text: {
     label: 'Long text',
     description: 'For policies and longer writing.',
@@ -277,7 +291,7 @@ export const PAGE_LABELS: Record<PageSlug, { label: string; path: string; help: 
   stories: { label: 'Stories page', path: '/stories', help: 'The introduction above your list of stories.' },
   services: { label: 'Services page', path: '/services', help: 'Text around your services. Edit the services themselves in Services & packages.' },
   about: { label: 'About page', path: '/about', help: 'Your brand story.' },
-  contact: { label: 'Contact page', path: '/contact', help: 'The inquiry form text.' },
+  contact: { label: 'Contact page', path: '/contact', help: 'The booking calendar and inquiry form text.' },
   privacy: { label: 'Privacy policy', path: '/privacy', help: 'Review this text before launch.' },
 }
 
@@ -380,7 +394,7 @@ export const SETTINGS_FIELDS: FieldDef[] = [
     key: 'bookingMessage',
     label: 'WhatsApp message',
     rows: 9,
-    help: 'Filled in for the couple. Use {date} (in Malay), {date_en} (in English), {name} {partner} {type} {service} {location} {notes} {ref}. Lines with an empty value are left out.',
+    help: 'Filled in for the couple. Use {date} {name} {partner} {type} {service} {location} {notes} {ref}. Lines with an empty value are left out. Switch to Bahasa Melayu above to edit the Malay message, used for visitors reading in Malay.',
   },
   { kind: 'heading', label: 'Inquiry form' },
   { kind: 'list', key: 'celebrationTypes', label: 'Types of celebration', itemLabel: 'type', max: 12 },

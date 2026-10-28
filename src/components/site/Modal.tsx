@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { EASE } from '../motion/MotionProvider'
 import { IconClose } from './icons'
+import { useT } from './context'
 
 /** Accessible full-screen dialog: focus trap, Escape to close, focus returns to the opener. */
 export function Modal({
@@ -20,6 +21,7 @@ export function Modal({
   onKey?: (e: KeyboardEvent) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const t = useT()
   useEffect(() => {
     if (!open) return
     const opener = document.activeElement as HTMLElement | null
@@ -61,7 +63,7 @@ export function Modal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.45, ease: EASE }}
         >
-          <button type="button" onClick={onClose} className="absolute right-3 top-3 z-10 flex h-12 w-12 items-center justify-center md:right-6 md:top-6" aria-label="Close">
+          <button type="button" onClick={onClose} className="absolute right-3 top-3 z-10 flex h-12 w-12 items-center justify-center md:right-6 md:top-6" aria-label={t('close')}>
             <IconClose size={26} />
           </button>
           {children}

@@ -2,7 +2,7 @@
 import { AnimatePresence, m, useReducedMotion, useSpring } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { SiteLink, useSite } from './context'
+import { SiteLink, useSite, useT } from './context'
 import { Wordmark } from './Wordmark'
 import { IconWhatsApp } from './icons'
 import { EASE } from '../motion/MotionProvider'
@@ -101,22 +101,40 @@ export function ViewCursor() {
   )
 }
 
-/** Phones: a slim bar to check dates, shown after the opening and hidden on the booking page. */
-export function MobileBookBar() {
+/**
+ * Phones: a slim bar to check dates. Appears after the opening screen and
+ * steps aside whenever a booking button, the calendar or the footer is on
+ * screen, so it never covers them.
+ */
+export function MobileBookBar({ path }: { path: string }) {
   const { settings } = useSite()
+  const t = useT()
   const pathname = usePathname()
-  const [show, setShow] = useState(false)
+  const [past, setPast] = useState(false)
+  const [blocked, setBlocked] = useState(false)
   useEffect(() => {
-    const onScroll = () => {
-      const nearEnd = window.innerHeight + window.scrollY > document.documentElement.scrollHeight - 520
-      setShow(window.scrollY > window.innerHeight * 0.7 && !nearEnd)
-    }
+    const onScroll = () => setPast(window.scrollY > window.innerHeight * 0.6)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const seen = new Set<Element>()
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) e.isIntersecting ? seen.add(e.target) : seen.delete(e.target)
+        setBlocked(seen.size > 0)
+      },
+      { rootMargin: '0px 0px -40px 0px' },
+    )
+    // Watch for targets after the page has rendered
+    const t0 = setTimeout(() => document.querySelectorAll('[data-hide-bookbar], footer').forEach((el) => io.observe(el)), 300)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      clearTimeout(t0)
+      io.disconnect()
+    }
   }, [pathname])
-  if (!settings.bookingEnabled || /\/contact$/.test(pathname)) return null
+  if (!settings.bookingEnabled || path === '/contact') return null
   const wa = waLink(settings.whatsappNumber, settings.whatsappMessage)
+  const show = past && !blocked
   return (
     <AnimatePresence>
       {show && (
@@ -125,11 +143,13 @@ export function MobileBookBar() {
           initial={{ y: '100%' }}
           animate={{ y: '0%' }}
           exit={{ y: '100%' }}
-          transition={{ duration: 0.5, ease: EASE }}
+          transition={{ duration: 0.45, ease: EASE }}
         >
-          <SiteLink href="/contact#book" className="btn btn-light min-h-11 flex-1 px-4">Check your date</SiteLink>
+          <SiteLink href="/contact#book" className="flex min-h-12 flex-1 items-center justify-center gap-2 bg-ivory px-4 text-[0.8125rem] font-semibold uppercase tracking-[0.14em] text-olive-deep active:bg-cream">
+            {t('bar.cta')}
+          </SiteLink>
           {wa && (
-            <a href={wa} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ivory/40" aria-label="Chat with us on WhatsApp">
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-ivory/40" aria-label={t('wa.chat')}>
               <IconWhatsApp size={22} />
             </a>
           )}
@@ -141,6 +161,7 @@ export function MobileBookBar() {
 
 export function WhatsAppFloat() {
   const { settings } = useSite()
+  const t = useT()
   const href = waLink(settings.whatsappNumber, settings.whatsappMessage)
   if (!href) return null
   return (
@@ -149,7 +170,7 @@ export function WhatsAppFloat() {
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-5 right-5 z-40 hidden h-13 w-13 items-center justify-center rounded-full border border-olive-deep/15 bg-ivory text-olive-deep shadow-[0_8px_30px_-12px_rgba(40,41,35,0.35)] transition-colors hover:bg-olive-deep hover:text-ivory md:bottom-8 md:right-8 md:flex"
-      aria-label="Chat with us on WhatsApp"
+      aria-label={t('wa.chat')}
     >
       <IconWhatsApp size={24} />
     </a>

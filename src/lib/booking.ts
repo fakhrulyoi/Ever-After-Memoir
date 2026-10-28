@@ -22,25 +22,26 @@ export function dayState(iso: string, map: Map<string, AvailabilityStatus>, rang
 export const isBookable = (s: DayState) => s === 'available' || s === 'limited'
 
 export const bookingSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose a date on the calendar'),
-  fullName: z.string().trim().min(1, 'Please tell us your name').max(120),
-  partnerName: z.string().trim().max(120).default(''),
-  celebrationType: z.string().trim().min(1, 'Choose the type of celebration').max(80),
-  serviceInterest: z.string().trim().min(1, 'Choose a service — “Not sure yet” is fine').max(120),
-  location: z.string().trim().min(1, 'Where is the wedding? A town or venue is fine').max(200),
-  notes: z.string().trim().max(1000, 'Please keep this under 1,000 characters').default(''),
-  email: z.string().trim().max(254).email('Please enter a valid email address').or(z.literal('')).default(''),
-  consent: z.literal(true, { message: 'Please agree so we can keep your details to reply' }),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'err.calendarDate'),
+  fullName: z.string().trim().min(1, 'err.name').max(120, 'err.nameLong'),
+  partnerName: z.string().trim().max(120, 'err.long').default(''),
+  celebrationType: z.string().trim().min(1, 'err.type').max(80),
+  serviceInterest: z.string().trim().min(1, 'err.service').max(120),
+  location: z.string().trim().min(1, 'err.location').max(200),
+  notes: z.string().trim().max(1000, 'err.notes').default(''),
+  email: z.string().trim().max(254).email('err.email').or(z.literal('')).default(''),
+  consent: z.literal(true, { message: 'err.consent' }),
   website: z.string().max(500).default(''),
   startedAt: z.number().int().positive(),
+  lang: z.enum(['en', 'ms']).default('en'),
 })
 
 export type BookingInput = z.input<typeof bookingSchema>
 
 export interface MessageValues {
-  /** Malay, e.g. Khamis, 5 November 2026 */
+  /** In the visitor's language, e.g. Thursday, 5 November 2026 / Khamis, 5 November 2026 */
   date: string
-  /** English, e.g. Thursday, 5 November 2026 */
+  /** Always English (kept for older message templates) */
   date_en: string
   name: string
   partner: string

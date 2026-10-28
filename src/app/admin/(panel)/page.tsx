@@ -4,18 +4,20 @@ import { StatusBadge } from '@/components/admin/Inquiries'
 import { PageHeader } from '@/components/admin/ui'
 import { formatWhen } from '@/lib/format'
 import { listInquiries, overviewCounts, getPageRow, getSettingsRow } from '@/lib/data/admin'
-import type { HeroSection, PageContent, SettingsContent } from '@/lib/content/types'
+import type { HeroSection, PageContent, SettingsContent, TeamSection } from '@/lib/content/types'
 import { SITE_URL } from '@/lib/env'
 
 export const metadata: Metadata = { title: 'Overview' }
 
 export default async function Overview() {
-  const [counts, inquiries, home, settings] = await Promise.all([
+  const [counts, inquiries, home, settings, about] = await Promise.all([
     overviewCounts(),
     listInquiries(),
     getPageRow<PageContent>('home'),
     getSettingsRow<SettingsContent>(),
+    getPageRow<PageContent>('about'),
   ])
+  const team = about?.published?.sections.find((x) => x.type === 'team') as TeamSection | undefined
   const s = settings?.published ?? settings?.draft
   const hero = home?.published?.sections.find((x) => x.type === 'hero') as HeroSection | undefined
   const checklist = [
@@ -23,6 +25,7 @@ export default async function Overview() {
     { done: Boolean(s?.whatsappNumber), label: 'Add your WhatsApp number so bookings open WhatsApp', href: '/admin/settings' },
     { done: !(hero?.slides ?? []).some((x) => x.isSample) && !hero?.media?.isSample, label: 'Check the photos in the homepage reel', href: '/admin/homepage' },
     { done: counts.markedDates > 0, label: 'Mark dates you are already booked in Availability', href: '/admin/availability' },
+    { done: !team || !team.visible || team.members.some((m) => m.name.trim()), label: 'Add your names to “Our team” on the About page', href: '/admin/pages/about' },
     { done: !(home?.published?.sections ?? []).some((x) => x.type === 'films' && (x.film?.isSample || x.reels.some((r) => r.video?.isSample))), label: 'Replace the sample film and reels with real footage', href: '/admin/homepage' },
     { done: Boolean(process.env.RESEND_API_KEY && process.env.INQUIRY_NOTIFY_EMAIL), label: 'Turn on email alerts for new inquiries (optional, see README)' },
     { done: !SITE_URL.includes('localhost'), label: 'Set your website address (NEXT_PUBLIC_SITE_URL)' },

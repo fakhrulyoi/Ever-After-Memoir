@@ -32,19 +32,19 @@ export function weekdayMon(iso: string) {
   return (new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7
 }
 
-export function formatLong(iso: string) {
-  return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+const LOC = { en: 'en-GB', ms: 'ms-MY' } as const
+
+/** e.g. "Thursday, 5 November 2026" / "Khamis, 5 November 2026" */
+export function formatLong(iso: string, lang: 'en' | 'ms' = 'en') {
+  return new Intl.DateTimeFormat(LOC[lang], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
     new Date(`${iso}T00:00:00Z`),
   )
 }
 
-/** e.g. "Khamis, 5 November 2026" */
 export function formatLongMs(iso: string) {
-  return new Intl.DateTimeFormat('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
-    new Date(`${iso}T00:00:00Z`),
-  )
+  return formatLong(iso, 'ms')
 }
 
-export function formatMonth(iso: string) {
-  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`))
+export function formatMonth(iso: string, lang: 'en' | 'ms' = 'en') {
+  return new Intl.DateTimeFormat(LOC[lang], { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`))
 }

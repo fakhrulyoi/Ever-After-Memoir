@@ -7,20 +7,21 @@ import { EASE } from '../motion/MotionProvider'
 import { ImageReveal } from '../motion/ImageReveal'
 import { MaskedText } from '../motion/MaskedText'
 import { Reveal } from '../motion/Reveal'
-import { SiteLink } from './context'
+import { SiteLink, useSite, useT } from './context'
 import { Lightbox, type LightboxItem } from './Lightbox'
 import { SmartImage, VideoPlayer } from './Media'
 
 function Tile({ item, i, sizes, title, onOpen }: { item: GalleryItem; i: number; sizes: string; title: string; onOpen: (i: number) => void }) {
   const media = item.media!
+  const t = useT()
   return (
     <figure>
       {media.type === 'video' ? (
         <Reveal y={30}>
-          <VideoPlayer media={media} title={item.caption || `${title} film`} aspect={aspectOf(media)} />
+          <VideoPlayer media={media} poster={media.poster ? { url: media.poster, type: 'image' } : null} title={item.caption || `${title} — ${t('stories.film')}`} aspect={aspectOf(media)} />
         </Reveal>
       ) : (
-        <button type="button" onClick={() => onOpen(i)} className="block w-full" data-cursor="View" aria-label={`Open image${item.caption ? `: ${item.caption}` : ''}`}>
+        <button type="button" onClick={() => onOpen(i)} className="block w-full" data-cursor="View" aria-label={`${t('stories.openImage')}${item.caption ? `: ${item.caption}` : ''}`}>
           <ImageReveal className="w-full" style={{ aspectRatio: aspectOf(media) }}>
             <SmartImage media={media} sizes={sizes} />
           </ImageReveal>
@@ -72,6 +73,8 @@ function aspectOf(m: MediaRef) {
 
 export function StoryView({ story, next }: { story: Published<StoryContent>; next: Published<StoryContent> | null }) {
   const s = story.content
+  const { lang } = useSite()
+  const t = useT()
   const [open, setOpen] = useState<number | null>(null)
   const cover = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: cover, offset: ['start start', 'end start'] })
@@ -85,7 +88,7 @@ export function StoryView({ story, next }: { story: Published<StoryContent>; nex
   const openAt = (galleryIndex: number) => setOpen(images.findIndex((x) => x.i === galleryIndex))
 
   const meta = [
-    s.weddingDate && formatDate(s.weddingDate),
+    s.weddingDate && formatDate(s.weddingDate, undefined, lang),
     s.venue,
     s.location,
   ].filter(Boolean) as string[]
@@ -100,7 +103,7 @@ export function StoryView({ story, next }: { story: Published<StoryContent>; nex
         </m.div>
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal/65 via-charcoal/15 to-transparent" aria-hidden />
         <div className="shell relative z-10 pb-12 pt-40 md:pb-16">
-          {s.isSample && <p className="mb-6 inline-block bg-ivory/85 px-2 py-1 text-xs text-olive-deep">Sample story</p>}
+          {s.isSample && <p className="mb-6 inline-block bg-ivory/85 px-2 py-1 text-xs text-olive-deep">{t('sampleStory')}</p>}
           <MaskedText as="h1" text={s.title} onMount delay={0.2} className="display display-xl max-w-[16ch]" />
           {meta.length > 0 && (
             <m.ul className="mt-8 flex flex-wrap gap-x-8 gap-y-2 text-[0.9375rem] text-ivory/85" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9, duration: 1 }}>
@@ -166,7 +169,7 @@ export function StoryView({ story, next }: { story: Published<StoryContent>; nex
             <SmartImage media={next.content.cover} sizes="100vw" />
           </div>
           <div className="shell relative flex min-h-[60svh] flex-col justify-end py-16">
-            <p className="kicker mb-6">Next story</p>
+            <p className="kicker mb-6">{t('stories.next')}</p>
             <p className="display display-xl transition-transform duration-1000 ease-[var(--ease-film)] group-hover:translate-x-4">{next.content.title}</p>
           </div>
         </SiteLink>

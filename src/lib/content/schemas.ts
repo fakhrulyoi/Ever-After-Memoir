@@ -37,7 +37,12 @@ export const mediaRefSchema = z.object({
 })
 const media = mediaRefSchema.nullable().default(null)
 
-const base = { key: z.string().min(1).max(40), visible: z.boolean().default(true) }
+/** Malay text by field path (see localize in lib/i18n) */
+export const translations = z
+  .record(z.string().max(80).regex(/^[A-Za-z]+(\.[A-Za-z0-9]+)*$/, 'Invalid field'), z.string().max(20000))
+  .default({})
+
+const base = { key: z.string().min(1).max(40), visible: z.boolean().default(true), ms: translations }
 
 // ---------------------------------------------------------------------------
 // Sections
@@ -58,7 +63,7 @@ export const sectionSchema = z.discriminatedUnion('type', [
     overlay: z.number().min(0).max(0.8).default(0.25),
     primary: link,
     secondary: link,
-    showTimecode: z.boolean().default(true),
+    showTimecode: z.boolean().default(false),
   }),
   z.object({
     ...base,
@@ -89,7 +94,7 @@ export const sectionSchema = z.discriminatedUnion('type', [
     filmCaption: text(160),
     reels: z
       .array(z.object({ video: media, poster: media, caption: text(80) }))
-      .max(8)
+      .max(12)
       .default([]),
   }),
   z.object({
@@ -167,6 +172,17 @@ export const sectionSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     ...base,
+    type: z.literal('team'),
+    eyebrow: text(80),
+    headline: text(160),
+    body: text(1200),
+    members: z
+      .array(z.object({ name: text(80), role: text(80), bio: text(800), photo: media }))
+      .max(6)
+      .default([]),
+  }),
+  z.object({
+    ...base,
     type: z.literal('booking'),
     eyebrow: text(80),
     headline: text(140),
@@ -176,6 +192,7 @@ export const sectionSchema = z.discriminatedUnion('type', [
 ])
 
 export const pageSchema = z.object({
+  ms: translations,
   title: text(60),
   seoTitle: text(70),
   seoDescription: text(170),
@@ -186,6 +203,7 @@ export const pageSchema = z.object({
 // Collections
 // ---------------------------------------------------------------------------
 export const storySchema = z.object({
+  ms: translations,
   title: text(120),
   slug: z
     .string()
@@ -211,6 +229,7 @@ export const storySchema = z.object({
 })
 
 export const serviceSchema = z.object({
+  ms: translations,
   kind: z.enum(['service', 'addon']).default('service'),
   name: text(80),
   summary: text(300),
@@ -224,6 +243,7 @@ export const serviceSchema = z.object({
 })
 
 export const testimonialSchema = z.object({
+  ms: translations,
   displayName: text(80),
   text: text(1200),
   weddingDate: text(40),
@@ -233,6 +253,7 @@ export const testimonialSchema = z.object({
 })
 
 export const socialItemSchema = z.object({
+  ms: translations,
   platform: z.enum(['instagram', 'tiktok', 'other']).default('instagram'),
   url: href,
   preview: media,
@@ -240,6 +261,7 @@ export const socialItemSchema = z.object({
 })
 
 export const settingsSchema = z.object({
+  ms: translations,
   siteTitle: text(60),
   tagline: text(120),
   metaDescription: text(170),

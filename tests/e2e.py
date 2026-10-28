@@ -74,7 +74,7 @@ with sync_playwright() as p:
     def t1():
         for vp in ({'width': 1440, 'height': 900}, {'width': 360, 'height': 760}):
             ctx, page = new_page(browser, viewport=vp)
-            for path in ['/', '/stories', '/services', '/about', '/contact', '/privacy', '/stories/a-day-to-remember']:
+            for path in ['/', '/stories', '/services', '/about', '/contact', '/privacy', '/stories/a-day-to-remember', '/ms', '/ms/stories', '/ms/services', '/ms/about', '/ms/contact', '/ms/privacy', '/ms/stories/in-red-and-bloom']:
                 r = page.goto(BASE + path, wait_until='domcontentloaded')
                 assert r and r.status == 200, f'{path} returned {r.status if r else None}'
                 page.wait_for_timeout(300)
@@ -144,6 +144,26 @@ with sync_playwright() as p:
         _, html = http('/')
         assert new_headline in html, 'published headline not on the live homepage'
     check('5  Live homepage shows the published headline after refresh', t5)
+
+    # 5b. Bahasa Melayu: the owner writes the Malay headline; /ms shows it, / stays English
+    ms_headline = f'Hari anda, seperti dirasa {stamp}'
+    def t5b():
+        admin.goto(f'{BASE}/admin/homepage')
+        admin.get_by_role('button', name='Bahasa Melayu').click()
+        field = admin.locator('#home-hero-ms-headline')
+        expect(field).to_be_visible()
+        field.fill(ms_headline)
+        save_and_publish(admin)
+        time.sleep(1)
+        _, ms_html = http('/ms')
+        assert ms_headline in ms_html, 'Malay headline missing on /ms'
+        assert 'lang="ms"' in ms_html or "lang='ms'" in ms_html, '/ms is not marked as Malay'
+        _, en_html = http('/')
+        assert ms_headline not in en_html, 'Malay headline leaked onto the English homepage'
+        assert new_headline in en_html, 'English headline lost after adding Malay'
+        admin.get_by_role('button', name='English', exact=True).click()
+        expect(admin.locator('#home-hero-headline')).to_have_value(new_headline)
+    check('5b Bahasa Melayu text is edited separately and shows on /ms only', t5b)
 
     # 6. Upload and reuse
     uploaded_alt = f'Test upload {stamp}'
@@ -226,7 +246,7 @@ with sync_playwright() as p:
     price = f'From RM {stamp}'
     def t13():
         admin.goto(f'{BASE}/admin/services')
-        admin.get_by_role('link', name='Wedding Day Content').click()
+        admin.get_by_role('link', name=re.compile('Wedding Content Creator')).click()
         admin.locator('#services-price').fill(price)
         admin.get_by_role('switch', name='Show the price on the website').click()
         admin.get_by_role('button', name='Save draft').click()
@@ -248,6 +268,8 @@ with sync_playwright() as p:
     def t14():
         ctx, page = new_page(browser, viewport={'width': 390, 'height': 900})
         page.goto(f'{BASE}/contact')
+        # The detailed form starts folded under the booking calendar
+        page.get_by_role('button', name=re.compile('Prefer email')).click()
         form = page.locator('#inquiry')
         form.get_by_role('button', name='Send inquiry').click()
         expect(form.get_by_text('Please tell us your name')).to_be_visible()

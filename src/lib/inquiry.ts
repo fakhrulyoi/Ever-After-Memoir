@@ -4,30 +4,34 @@ import { todayISO } from './dates'
 
 const today = () => todayISO()
 
-/** Shared by the contact form (browser) and the API route (server). */
+/**
+ * Shared by the contact form (browser) and the API route (server).
+ * Error messages are keys from lib/i18n so the form can show them in either language.
+ */
 export const inquirySchema = z.object({
-  fullName: z.string().trim().min(1, 'Please tell us your name').max(120, 'Keep your name under 120 characters'),
-  partnerName: z.string().trim().max(120, 'Keep this under 120 characters').default(''),
-  email: z.string().trim().max(254).email('Please enter a valid email address'),
+  fullName: z.string().trim().min(1, 'err.name').max(120, 'err.nameLong'),
+  partnerName: z.string().trim().max(120, 'err.long').default(''),
+  email: z.string().trim().max(254).email('err.email'),
   whatsapp: z
     .string()
     .trim()
     .max(30)
-    .regex(/^(\+?[\d\s-]{7,20})?$/, 'Use digits only, including the country code — e.g. +60 12 345 6789')
+    .regex(/^(\+?[\d\s-]{7,20})?$/, 'err.whatsapp')
     .default(''),
   weddingDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Please choose your wedding date')
-    .refine((d) => d >= today(), 'The date should be today or later'),
-  location: z.string().trim().min(1, 'Where is the wedding? A city or venue is fine').max(200),
-  celebrationType: z.string().trim().min(1, 'Please choose the type of celebration').max(80),
-  serviceInterest: z.string().trim().min(1, 'Please choose a service — “Not sure yet” is fine').max(120),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'err.date')
+    .refine((d) => d >= today(), 'err.dateFuture'),
+  location: z.string().trim().min(1, 'err.location').max(200),
+  celebrationType: z.string().trim().min(1, 'err.type').max(80),
+  serviceInterest: z.string().trim().min(1, 'err.service').max(120),
   budget: z.string().trim().max(80).default(''),
-  notes: z.string().trim().max(4000, 'Please keep your notes under 4,000 characters').default(''),
-  consent: z.literal(true, { message: 'Please agree so we can keep your details to reply' }),
+  notes: z.string().trim().max(4000, 'err.notes').default(''),
+  consent: z.literal(true, { message: 'err.consent' }),
   // Spam protection
   website: z.string().max(500).default(''),
   startedAt: z.number().int().positive(),
+  lang: z.enum(['en', 'ms']).default('en'),
 })
 
 export type InquiryInput = z.input<typeof inquirySchema>

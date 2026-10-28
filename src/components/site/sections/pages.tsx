@@ -15,7 +15,7 @@ import { ImageReveal } from '../../motion/ImageReveal'
 import { MaskedText } from '../../motion/MaskedText'
 import { Parallax } from '../../motion/Parallax'
 import { Reveal } from '../../motion/Reveal'
-import { SiteLink } from '../context'
+import { SiteLink, useT } from '../context'
 import { SmartImage } from '../Media'
 import { StoryCard } from './home'
 
@@ -121,27 +121,28 @@ export function Founder({ s }: { s: FounderSection }) {
 export function StoriesGrid({ s, data }: { s: StoriesGridSection; data: SiteData }) {
   const tags = useMemo(() => [...new Set(data.stories.flatMap((x) => x.content.tags))].sort(), [data.stories])
   const [tag, setTag] = useState<string | null>(null)
+  const t = useT()
   const list = tag ? data.stories.filter((x) => x.content.tags.includes(tag)) : data.stories
   return (
     <section className="pb-28 pt-12 md:pb-40">
       <div className="shell">
         {s.showFilters && tags.length > 1 && (
-          <div className="mb-14 flex flex-wrap gap-x-6 gap-y-3" role="group" aria-label="Filter stories">
-            {[null, ...tags].map((t) => (
+          <div className="mb-14 flex flex-wrap gap-x-6 gap-y-3" role="group" aria-label={t('stories.filter')}>
+            {[null, ...tags].map((x) => (
               <button
-                key={t ?? 'all'}
+                key={x ?? 'all'}
                 type="button"
-                onClick={() => setTag(t)}
-                aria-pressed={tag === t}
-                className={`border-b py-1.5 text-[0.875rem] transition-colors ${tag === t ? 'border-olive-deep text-olive-deep' : 'border-transparent text-ink-soft hover:text-olive-deep'}`}
+                onClick={() => setTag(x)}
+                aria-pressed={tag === x}
+                className={`min-h-11 border-b py-1.5 text-[0.9375rem] transition-colors ${tag === x ? 'border-olive-deep text-olive-deep' : 'border-transparent text-ink-soft hover:text-olive-deep'}`}
               >
-                {t ?? 'All stories'}
+                {x ?? t('stories.all')}
               </button>
             ))}
           </div>
         )}
         {list.length === 0 ? (
-          <p className="lede">New stories are on their way.</p>
+          <p className="lede">{t('stories.empty')}</p>
         ) : (
           <ul className="grid gap-x-10 gap-y-20 md:grid-cols-2 md:gap-y-32">
             {list.map((story, i) => (
@@ -159,6 +160,7 @@ export function StoriesGrid({ s, data }: { s: StoriesGridSection; data: SiteData
 export function ServicesList({ s, data }: { s: ServicesListSection; data: SiteData }) {
   const services = data.services.filter((x) => x.content.kind === 'service')
   const addons = data.services.filter((x) => x.content.kind === 'addon')
+  const t = useT()
   return (
     <section className="pb-28 pt-8 md:pb-40">
       <div className="shell">
@@ -176,14 +178,14 @@ export function ServicesList({ s, data }: { s: ServicesListSection; data: SiteDa
                 <div className={`flex flex-col md:col-span-6 ${flip ? 'md:order-1 md:col-start-1' : 'md:col-start-7'}`}>
                   <span className="display text-2xl italic text-olive">{String(i + 1).padStart(2, '0')}</span>
                   <MaskedText text={c.name} as="h2" className="display display-md mt-4 text-olive-deep" />
-                  {c.featured && <p className="mt-4 self-start bg-olive-deep px-3 py-1 text-xs text-ivory">Most requested</p>}
+                  {c.featured && <p className="mt-4 self-start bg-olive-deep px-3 py-1 text-xs text-ivory">{t('services.most')}</p>}
                   <Reveal delay={0.15} className="mt-8 space-y-5">
                     <p className="text-[1.125rem] leading-relaxed text-charcoal">{c.summary}</p>
                     <Paragraphs text={c.description} className="lede" />
                   </Reveal>
                   {c.deliverables.length > 0 && (
                     <Reveal delay={0.25} className="mt-10">
-                      <p className="mb-3 text-sm font-medium text-olive-deep">What you receive</p>
+                      <p className="mb-3 text-sm font-medium text-olive-deep">{t('services.receive')}</p>
                       <ul className="divide-y divide-charcoal/10 border-y border-charcoal/10">
                         {c.deliverables.map((d, k) => <li key={k} className="py-3 text-[0.9375rem]">{d}</li>)}
                       </ul>
@@ -197,10 +199,10 @@ export function ServicesList({ s, data }: { s: ServicesListSection; data: SiteDa
                           {c.priceNote && <span className="meta">{c.priceNote}</span>}
                         </>
                       ) : (
-                        <span className="meta">Contact for pricing</span>
+                        <span className="meta">{t('services.contactPrice')}</span>
                       )}
                     </p>
-                    <SiteLink href="/contact" className="text-link text-olive-deep">Ask about this</SiteLink>
+                    <SiteLink href="/contact#book" className="text-link text-olive-deep">{t('services.ask')}</SiteLink>
                   </Reveal>
                 </div>
               </li>
@@ -217,7 +219,7 @@ export function ServicesList({ s, data }: { s: ServicesListSection; data: SiteDa
                     <span className="block font-medium">{a.content.name}</span>
                     {a.content.summary && <span className="text-[0.9375rem] text-ink-soft">{a.content.summary}</span>}
                   </span>
-                  <span className="meta">{a.content.showPrice && a.content.price ? a.content.price : 'Contact for pricing'}</span>
+                  <span className="meta">{a.content.showPrice && a.content.price ? a.content.price : t('services.contactPrice')}</span>
                 </li>
               ))}
             </ul>

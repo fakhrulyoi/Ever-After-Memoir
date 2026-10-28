@@ -170,7 +170,7 @@
     max-width: 1680px;
   }
   .section-y {
-    padding-block: clamp(5rem, 11vw, 11rem);
+    padding-block: clamp(4rem, 11vw, 11rem);
   }
   .hairline {
     height: 1px;
@@ -245,14 +245,15 @@
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    padding-block: 0.4rem;
+    /* tall enough to tap comfortably; the underline sits just under the words */
+    padding-block: 0.85rem;
   }
   .text-link::after {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: 0.5rem;
     height: 1px;
     background: currentColor;
     transform-origin: left;

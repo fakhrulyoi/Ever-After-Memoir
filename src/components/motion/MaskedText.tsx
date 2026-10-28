@@ -29,7 +29,7 @@ export function MaskedText({
   className,
   delay = 0,
   onMount = false,
-  stagger = 0.055,
+  stagger = 0.035,
 }: {
   text: string
   as?: ElementType
@@ -60,7 +60,7 @@ export function MaskedText({
               className="inline-block will-change-transform"
               variants={{
                 hide: { y: '108%', opacity: 0 },
-                show: { y: '0%', opacity: 1, transition: { duration: 1.1, ease: EASE, delay: d } },
+                show: { y: '0%', opacity: 1, transition: { duration: 0.85, ease: EASE, delay: d } },
               }}
             >
               <Inner>{t.word}</Inner>
@@ -83,7 +83,7 @@ export function MaskedText({
       {onMount ? (
         <span aria-hidden className="block">{body}</span>
       ) : (
-        <m.span aria-hidden initial={reduce ? 'show' : 'hide'} whileInView="show" viewport={{ once: true, amount: 0.5 }} className="block">
+        <m.span aria-hidden initial={reduce ? 'show' : 'hide'} whileInView="show" viewport={{ once: true, amount: 0.2, margin: '0px 0px -8% 0px' }} className="block">
           {body}
         </m.span>
       )}

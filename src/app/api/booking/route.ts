@@ -3,7 +3,8 @@ import { bookingRange, bookingSchema, dayState, fillMessage, isBookable } from '
 import { DEFAULT_SETTINGS } from '@/lib/content/defaults'
 import { normalize } from '@/lib/content/schemas'
 import type { AvailabilityStatus } from '@/lib/content/types'
-import { formatLong, formatLongMs } from '@/lib/dates'
+import { formatLong } from '@/lib/dates'
+import { localize, t, type Lang } from '@/lib/i18n'
 import { SITE_URL } from '@/lib/env'
 import { fieldErrors } from '@/lib/inquiry'
 import { ipHash, overLimit, recordHit } from '@/lib/ratelimit'
@@ -19,47 +20,48 @@ const json = (body: object, status = 200) => NextResponse.json(body, { status, h
 export async function POST(req: NextRequest) {
   const origin = req.headers.get('origin')
   if (origin && origin !== new URL(req.url).origin && origin !== SITE_URL) {
-    return json({ ok: false, error: 'Bookings can only be sent from the website.' }, 403)
+    return json({ ok: false, error: t('en', 'api.origin') }, 403)
   }
   let body: unknown
   try {
     body = await req.json()
   } catch {
-    return json({ ok: false, error: 'Your booking could not be read. Please try again.' }, 400)
+    return json({ ok: false, error: t('en', 'api.unreadable') }, 400)
   }
+  const lang: Lang = (body as { lang?: string } | null)?.lang === 'ms' ? 'ms' : 'en'
   const parsed = bookingSchema.safeParse(body)
   if (!parsed.success) {
-    return json({ ok: false, error: 'Please check the highlighted fields.', fieldErrors: fieldErrors(parsed.error as never) }, 422)
+    return json({ ok: false, error: t(lang, 'api.check'), fieldErrors: fieldErrors(parsed.error as never) }, 422)
   }
   const d = parsed.data
   if (d.website || Date.now() - d.startedAt < 2500) return json({ ok: true, whatsappUrl: null, ref: '' })
 
   const sb = createServiceClient()
-  if (!sb) return json({ ok: false, error: 'Booking is not connected yet. Please message us on Instagram or TikTok for now.' }, 503)
+  if (!sb) return json({ ok: false, error: t(lang, 'api.notConnected') }, 503)
 
   // Read the live settings and the date's status fresh, never from cache
   const [{ data: settingsRow }, { data: dayRow }] = await Promise.all([
     sb.from('site_settings').select('published').eq('status', 'published').limit(1).maybeSingle(),
     sb.from('availability').select('status').eq('day', d.date).maybeSingle(),
   ])
-  const settings = normalize('site_settings', settingsRow?.published, DEFAULT_SETTINGS)
-  if (!settings.bookingEnabled) return json({ ok: false, error: 'Online booking is paused right now. Please send an inquiry instead.' }, 409)
+  const settings = localize(normalize('site_settings', settingsRow?.published, DEFAULT_SETTINGS), lang)
+  if (!settings.bookingEnabled) return json({ ok: false, error: t(lang, 'api.paused') }, 409)
 
   const map = new Map<string, AvailabilityStatus>(dayRow ? [[d.date, dayRow.status as AvailabilityStatus]] : [])
   const state = dayState(d.date, map, bookingRange({ leadDays: settings.bookingLeadDays, monthsAhead: settings.bookingMonthsAhead }))
   if (!isBookable(state)) {
-    return json({ ok: false, error: state === 'outside' ? 'That date can’t be booked online. Please choose another date.' : 'Sorry — that date was just booked. Please choose another one.' }, 409)
+    return json({ ok: false, error: t(lang, state === 'outside' ? 'api.outside' : 'api.taken') }, 409)
   }
 
   const wa = settings.whatsappNumber
   if (!wa && !d.email) {
-    return json({ ok: false, error: 'Please add your email so we can reply.', fieldErrors: { email: 'Please add your email so we can reply' } }, 422)
+    return json({ ok: false, error: t(lang, 'err.emailNeeded'), fieldErrors: { email: 'err.emailNeeded' } }, 422)
   }
 
   const hash = ipHash(req)
   const limited = await overLimit(sb, hash)
-  if (limited === 'error') return json({ ok: false, error: 'Your booking was not sent. Please try again in a few minutes.' }, 500)
-  if (limited) return json({ ok: false, error: 'You have sent several requests already. Please wait an hour, or message us on Instagram.' }, 429)
+  if (limited === 'error') return json({ ok: false, error: t(lang, 'api.retry') }, 500)
+  if (limited) return json({ ok: false, error: t(lang, 'api.limit') }, 429)
 
   const { data: row, error } = await sb
     .from('inquiries')
@@ -80,13 +82,14 @@ export async function POST(req: NextRequest) {
     .single()
   if (error || !row) {
     console.error('booking insert failed', error?.message)
-    return json({ ok: false, error: 'Your booking was not sent. Please try again in a few minutes.' }, 500)
+    return json({ ok: false, error: t(lang, 'api.retry') }, 500)
   }
   await recordHit(sb, hash)
 
   const ref = row.id.slice(0, 8).toUpperCase()
-  const message = fillMessage(settings.bookingMessage || DEFAULT_SETTINGS.bookingMessage, {
-    date: formatLongMs(d.date),
+  const fallback = lang === 'ms' ? DEFAULT_SETTINGS.ms?.bookingMessage : DEFAULT_SETTINGS.bookingMessage
+  const message = fillMessage(settings.bookingMessage || fallback || DEFAULT_SETTINGS.bookingMessage, {
+    date: formatLong(d.date, lang),
     date_en: formatLong(d.date),
     name: d.fullName,
     partner: d.partnerName,

@@ -7,6 +7,7 @@ import { EditorShell } from './EditorShell'
 import { FormContextProvider, SchemaForm, type FormContextValue } from './FormFields'
 import { Button, Confirm, inputClass } from './ui'
 import { dragClasses, useDragSort } from './useDragSort'
+import { useEditLang } from './Translate'
 
 type Device = 'phone' | 'tablet' | 'desktop'
 const WIDTH: Record<Device, number> = { phone: 390, tablet: 820, desktop: 1440 }
@@ -15,6 +16,7 @@ function LivePreview({ path, slug, content }: { path: string; slug: string; cont
   const frame = useRef<HTMLIFrameElement>(null)
   const box = useRef<HTMLDivElement>(null)
   const [device, setDevice] = useState<Device>('desktop')
+  const { lang } = useEditLang()
   const [boxW, setBoxW] = useState(600)
   const latest = useRef(content)
   latest.current = content
@@ -69,7 +71,8 @@ function LivePreview({ path, slug, content }: { path: string; slug: string; cont
         <div style={{ width: w * scale, height, margin: '0 auto' }}>
           <iframe
             ref={frame}
-            src={`/preview${path === '/' ? '' : path}?live=1`}
+            key={lang}
+            src={`/preview${lang === 'ms' ? '/ms' : ''}${path === '/' ? '' : path}?live=1`}
             title="Live preview of your unpublished changes"
             onLoad={send}
             style={{ width: w, height: height / scale, transform: `scale(${scale})`, transformOrigin: '0 0', border: 0 }}

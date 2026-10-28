@@ -1,5 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { localize } from '@/lib/i18n'
+import { useSite } from './context'
+import { Team } from './sections/team'
 import type { PageContent, Section } from '@/lib/content/types'
 import type { SiteData } from '@/lib/data/site'
 import { Cta, FeaturedStories, Films, Hero, Marquee, Philosophy, ServicesPreview, Social, Testimonials } from './sections/home'
@@ -30,6 +33,7 @@ function SectionView({ s, data, first }: { s: Section; data: SiteData; first: bo
     case 'collage': return <Collage s={s} />
     case 'rich_text': return <RichTextBlock s={s} first={first} />
     case 'quote': return <Quote s={s} />
+    case 'team': return <Team s={s} />
     default: return null
   }
 }
@@ -52,7 +56,9 @@ export function Sections({ page, data, live }: { page: PageContent; data: SiteDa
     window.parent?.postMessage({ type: 'eam:preview-ready', id: live }, window.location.origin)
     return () => window.removeEventListener('message', onMessage)
   }, [live])
-  const visible = content.sections.filter((s) => s.visible)
+  const { lang } = useSite()
+  const shown = useMemo(() => localize(content, lang), [content, lang])
+  const visible = shown.sections.filter((s) => s.visible)
   return (
     <>
       {visible.map((s, i) => (

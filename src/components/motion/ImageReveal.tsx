@@ -19,7 +19,7 @@ export function ImageReveal({
 }) {
   const trigger = onMount
     ? { animate: 'show' as const }
-    : { whileInView: 'show' as const, viewport: { once: true, amount: 0.2 } }
+    : { whileInView: 'show' as const, viewport: { once: true, amount: 0.12 } }
   // The in-view trigger sits on a wrapper without clip-path: Chrome treats a
   // fully clipped element as invisible and would never start the reveal.
   return (
@@ -28,12 +28,12 @@ export function ImageReveal({
         className="absolute inset-0 overflow-hidden"
         variants={{
           hide: { clipPath: 'inset(100% 0% 0% 0%)' },
-          show: { clipPath: 'inset(0% 0% 0% 0%)', transition: { duration: 1.25, ease: EASE, delay } },
+          show: { clipPath: 'inset(0% 0% 0% 0%)', transition: { duration: 1.05, ease: EASE, delay } },
         }}
       >
         <m.div
           className="absolute inset-0"
-          variants={{ hide: { scale: 1.14 }, show: { scale: 1, transition: { duration: 1.8, ease: EASE, delay } } }}
+          variants={{ hide: { scale: 1.12 }, show: { scale: 1, transition: { duration: 1.5, ease: EASE, delay } } }}
         >
           {children}
         </m.div>

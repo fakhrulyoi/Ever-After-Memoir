@@ -15,6 +15,8 @@ import {
 import type { ContentStatus, ContentTable } from '@/lib/content/types'
 import { Button, Confirm, StatusPill, formatWhen } from './ui'
 import { useUnsavedGuard } from './useUnsavedGuard'
+import { EditLangProvider, LangToggle } from './Translate'
+import type { Lang } from '@/lib/i18n'
 
 interface Props<T> {
   table: ContentTable
@@ -49,6 +51,7 @@ export function EditorShell<T>(p: Props<T>) {
   const [confirm, setConfirm] = useState<null | 'unpublish' | 'archive' | 'delete'>(null)
   const [history, setHistory] = useState<VersionInfo[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [lang, setLang] = useState<Lang>('en')
   const dirty = JSON.stringify(draft) !== saved
   useUnsavedGuard(dirty)
   const draftRef = useRef(draft)
@@ -97,7 +100,8 @@ export function EditorShell<T>(p: Props<T>) {
   }, [save])
 
   const preview = async () => {
-    const href = p.previewHref?.(draftRef.current)
+    const base = p.previewHref?.(draftRef.current)
+    const href = base && lang === 'ms' ? base.replace(/^\/preview/, '/preview/ms') : base
     if (!href) return toast.error('Add a web address first so the preview knows where to open.')
     const win = window.open('about:blank', '_blank')
     if (dirty && !(await save(true))) {
@@ -163,6 +167,7 @@ export function EditorShell<T>(p: Props<T>) {
   }
 
   return (
+    <EditLangProvider value={{ lang, setLang }}>
     <div>
       <div className="sticky top-0 z-30 -mx-4 mb-8 border-b border-charcoal/10 bg-ivory/95 px-4 py-4 backdrop-blur md:-mx-8 md:px-8">
         {p.backHref && (
@@ -179,7 +184,8 @@ export function EditorShell<T>(p: Props<T>) {
               {p.subtitle}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <LangToggle />
             <Button onClick={() => save()} busy={busy === 'save'} disabled={!dirty || busy !== null}>Save draft</Button>
             {p.previewHref && <Button onClick={preview} disabled={busy !== null}>Preview</Button>}
             <Button variant="primary" onClick={publish} busy={busy === 'publish'} disabled={busy !== null || (status === 'published' && !hasChanges && !dirty)}>
@@ -243,5 +249,6 @@ export function EditorShell<T>(p: Props<T>) {
         </ul>
       </Confirm>
     </div>
+    </EditLangProvider>
   )
 }

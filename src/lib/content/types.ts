@@ -21,19 +21,23 @@ export interface LinkValue {
   href: string
 }
 
+/** Malay versions of text fields, by path: { headline: '…', 'primary.label': '…', 'reels.0.caption': '…' } */
+export type Translations = Record<string, string>
+
 interface SectionBase {
   /** Stable key for the section inside a page */
   key: string
   visible: boolean
+  ms?: Translations
 }
 
 export interface HeroSection extends SectionBase {
   type: 'hero'
   /** reel = story-style slideshow beside the headline; full = one full-screen image or video */
   layout: 'reel' | 'full'
-  /** Photos for the reel layout, shown one after another */
+  /** Photos or short silent videos for the reel layout, shown one after another */
   slides: MediaRef[]
-  /** Seconds each photo stays on screen */
+  /** Seconds each slide stays on screen */
   interval: number
   eyebrow: string
   headline: string
@@ -197,6 +201,22 @@ export interface InquirySection extends SectionBase {
   privacyNote: string
 }
 
+export interface TeamMember {
+  name: string
+  role: string
+  bio: string
+  photo: MediaRef | null
+}
+
+export interface TeamSection extends SectionBase {
+  type: 'team'
+  eyebrow: string
+  headline: string
+  body: string
+  /** Only members with a name are shown */
+  members: TeamMember[]
+}
+
 export interface RichTextSection extends SectionBase {
   type: 'rich_text'
   headline: string
@@ -229,10 +249,12 @@ export type Section =
   | ImageBreakSection
   | CollageSection
   | BookingSection
+  | TeamSection
 
 export type SectionType = Section['type']
 
 export interface PageContent {
+  ms?: Translations
   title: string
   seoTitle: string
   seoDescription: string
@@ -250,6 +272,7 @@ export interface GalleryItem {
 }
 
 export interface StoryContent {
+  ms?: Translations
   title: string
   slug: string
   excerpt: string
@@ -267,6 +290,7 @@ export interface StoryContent {
 }
 
 export interface ServiceContent {
+  ms?: Translations
   kind: 'service' | 'addon'
   name: string
   summary: string
@@ -280,6 +304,7 @@ export interface ServiceContent {
 }
 
 export interface TestimonialContent {
+  ms?: Translations
   displayName: string
   text: string
   weddingDate: string
@@ -289,6 +314,7 @@ export interface TestimonialContent {
 }
 
 export interface SocialItemContent {
+  ms?: Translations
   platform: 'instagram' | 'tiktok' | 'other'
   url: string
   preview: MediaRef | null
@@ -296,6 +322,7 @@ export interface SocialItemContent {
 }
 
 export interface SettingsContent {
+  ms?: Translations
   siteTitle: string
   tagline: string
   metaDescription: string
@@ -318,7 +345,7 @@ export interface SettingsContent {
   bookingLeadDays: number
   /** How far ahead the calendar goes */
   bookingMonthsAhead: number
-  /** WhatsApp message. Placeholders: {date} {date_en} {name} {partner} {type} {service} {location} {notes} {ref} */
+  /** WhatsApp message. Placeholders: {date} {name} {partner} {type} {service} {location} {notes} {ref}. The Malay version is used for visitors reading in Malay. */
   bookingMessage: string
 }
 

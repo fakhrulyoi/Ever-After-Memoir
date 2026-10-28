@@ -6,6 +6,7 @@ import type { MediaRef } from '@/lib/content/types'
 import { EASE } from '../motion/MotionProvider'
 import { Modal } from './Modal'
 import { IconArrow } from './icons'
+import { useT } from './context'
 
 export interface LightboxItem {
   media: MediaRef
@@ -25,6 +26,7 @@ export function Lightbox({
   onClose: () => void
 }) {
   const startX = useRef<number | null>(null)
+  const t = useT()
   const go = useCallback(
     (d: number) => index !== null && onChange((index + d + items.length) % items.length),
     [index, items.length, onChange],
@@ -38,7 +40,7 @@ export function Lightbox({
   )
   const item = index !== null ? items[index] : null
   return (
-    <Modal open={index !== null} onClose={onClose} label="Image gallery" onKey={onKey}>
+    <Modal open={index !== null} onClose={onClose} label={t('gallery.label')} onKey={onKey}>
       <div
         className="relative flex flex-1 touch-pan-y select-none items-center justify-center px-4 py-16 md:px-24"
         onPointerDown={(e) => (startX.current = e.clientX)}
@@ -65,10 +67,10 @@ export function Lightbox({
         </AnimatePresence>
         {items.length > 1 && (
           <>
-            <button type="button" onClick={() => go(-1)} className="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center md:left-6" aria-label="Previous image">
+            <button type="button" onClick={() => go(-1)} className="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center md:left-6" aria-label={t('gallery.prev')}>
               <IconArrow dir="left" size={26} />
             </button>
-            <button type="button" onClick={() => go(1)} className="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center md:right-6" aria-label="Next image">
+            <button type="button" onClick={() => go(1)} className="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center md:right-6" aria-label={t('gallery.next')}>
               <IconArrow size={26} />
             </button>
           </>

@@ -96,11 +96,11 @@ export function slugify(input: string) {
     .slice(0, 80)
 }
 
-export function formatDate(iso: string, opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' }) {
+export function formatDate(iso: string, opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' }, lang: 'en' | 'ms' = 'en') {
   if (!iso) return ''
   const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso)
   if (Number.isNaN(d.getTime())) return ''
-  return new Intl.DateTimeFormat('en-GB', opts).format(d)
+  return new Intl.DateTimeFormat(lang === 'ms' ? 'ms-MY' : 'en-GB', opts).format(d)
 }
 
 export function waLink(number: string, message: string) {

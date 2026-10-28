@@ -2,7 +2,8 @@
 import Image from 'next/image'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { FieldDef } from '@/lib/content/fields'
-import type { CollageItem, GalleryItem, LinkValue, MediaRef, Reel } from '@/lib/content/types'
+import type { CollageItem, GalleryItem, LinkValue, MediaRef, Reel, TeamMember } from '@/lib/content/types'
+import { TranslateForm, useEditLang } from './Translate'
 import { MediaLibrary } from './MediaLibrary'
 import { Button, FieldShell, Toggle, inputClass } from './ui'
 import { dragClasses, useDragSort } from './useDragSort'
@@ -27,7 +28,9 @@ export function SchemaForm({
   onChange: (next: Obj) => void
   idPrefix: string
 }) {
+  const { lang } = useEditLang()
   const set = (key: string, v: unknown) => onChange({ ...value, [key]: v })
+  if (lang === 'ms') return <TranslateForm fields={fields} value={value} onChange={onChange} idPrefix={idPrefix} />
   return (
     <div className="space-y-6">
       {fields.map((f, i) => {
@@ -120,6 +123,8 @@ function Field({ def, id, value, onChange, all }: { def: Exclude<FieldDef, { kin
       return <CollageField id={id} label={def.label} value={(value as CollageItem[]) ?? []} onChange={onChange} />
     case 'gallery':
       return <GalleryField id={id} label={def.label} value={(value as GalleryItem[]) ?? []} onChange={onChange} />
+    case 'team':
+      return <TeamField id={id} label={def.label} help={def.help} value={(value as TeamMember[]) ?? []} onChange={onChange} />
   }
 }
 
@@ -429,12 +434,14 @@ function SlidesField({ id, label, help, max, value, onChange }: { id: string; la
         mediaOf={(m) => m}
         render={(m, i) => (
           <p className="text-sm">
-            <span className="font-medium">Photo {i + 1}</span>
-            {m.width && m.width < 900 && <span className="block text-xs text-[#6b4f1d]">Small photo ({m.width} px wide) — may look soft on large screens.</span>}
+            <span className="font-medium">{m.type === 'video' ? 'Video' : 'Photo'} {i + 1}</span>
+            {m.type === 'image' && m.width && m.width < 900 && <span className="block text-xs text-[#6b4f1d]">Small photo ({m.width} px wide) — may look soft on large screens.</span>}
+            {m.type === 'video' && <span className="block text-xs text-ink-soft">Plays silently on a loop. Short vertical clips work best.</span>}
           </p>
         )}
-        addLabel="Add photos"
-        dialogTitle="Choose reel photos"
+        addLabel="Add photos or videos"
+        dialogTitle="Choose reel photos and videos"
+        accept="any"
         max={max}
         make={(ref) => ref}
       />
@@ -501,6 +508,31 @@ function GalleryField({ id, label, value, onChange }: { id: string; label: strin
         make={(ref): GalleryItem => ({ media: ref, caption: '', layout: ref.width && ref.height && ref.width > ref.height ? 'full' : 'half' })}
       />
       {value.length < 80 && <Button onClick={() => onChange([...value, { media: null, caption: '', layout: 'chapter' }])}>Add a chapter</Button>}
+    </fieldset>
+  )
+}
+
+function TeamField({ id, label, help, value, onChange }: { id: string; label: string; help?: string; value: TeamMember[]; onChange: (v: TeamMember[]) => void }) {
+  const update = (i: number, patch: Partial<TeamMember>) => onChange(value.map((p, k) => (k === i ? { ...p, ...patch } : p)))
+  return (
+    <fieldset className="space-y-3" id={id}>
+      <legend className="text-[0.8125rem] font-semibold">{label}</legend>
+      {help && <p className="text-xs text-ink-soft">{help}</p>}
+      {value.map((p, i) => (
+        <div key={i} className="space-y-3 border border-charcoal/10 bg-white/40 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">{p.name || `Member ${i + 1}`}{!p.name && <span className="ml-2 font-normal text-ink-soft">(hidden until you add a name)</span>}</p>
+            <Button variant="ghost" className="min-h-8 px-2" onClick={() => onChange(value.filter((_, k) => k !== i))}>Remove</Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input aria-label={`Member ${i + 1} name`} placeholder="Name" className={inputClass} value={p.name} maxLength={80} onChange={(e) => update(i, { name: e.target.value })} />
+            <input aria-label={`Member ${i + 1} role`} placeholder="Role, e.g. Wedding content creator" className={inputClass} value={p.role} maxLength={80} onChange={(e) => update(i, { role: e.target.value })} />
+          </div>
+          <textarea aria-label={`About member ${i + 1}`} placeholder="A few words about them (optional)" className={inputClass} rows={3} value={p.bio} maxLength={800} onChange={(e) => update(i, { bio: e.target.value })} />
+          <MediaField id={`${id}-${i}-photo`} label="Portrait (optional)" accept="image" value={p.photo} onChange={(v) => update(i, { photo: v })} />
+        </div>
+      ))}
+      {value.length < 6 && <Button onClick={() => onChange([...value, { name: '', role: '', bio: '', photo: null }])}>Add a member</Button>}
     </fieldset>
   )
 }

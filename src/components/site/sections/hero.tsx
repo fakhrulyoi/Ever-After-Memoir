@@ -136,7 +136,7 @@ export function HeroReel({ s }: { s: HeroSection }) {
           </div>
         )}
 
-        <div className="pointer-events-none absolute bottom-6 right-4 z-[5] hidden items-center gap-5 md:right-6 md:flex" aria-hidden>
+        <div className="pointer-events-none absolute bottom-8 right-4 z-[5] hidden items-center gap-5 md:right-28 md:flex" aria-hidden>
           {s.showTimecode && <Timecode className="text-ivory/85" />}
           {n > 1 && (
             <span className="display text-xl italic text-ivory/90">

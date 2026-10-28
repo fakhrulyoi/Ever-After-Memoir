@@ -2,6 +2,7 @@ import 'server-only'
 import { createHash } from 'node:crypto'
 import type { NextRequest } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { ipSalt } from './env'
 
 export const MAX_PER_HOUR = 5
 
@@ -10,7 +11,7 @@ export function clientIp(req: NextRequest) {
 }
 
 export function ipHash(req: NextRequest) {
-  const salt = process.env.INQUIRY_IP_SALT || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  const salt = ipSalt()
   return createHash('sha256').update(`${salt}:${clientIp(req)}`).digest('hex')
 }
 

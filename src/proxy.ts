@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from './lib/env'
 
 const PUBLIC_ADMIN = ['/admin/login', '/admin/forgot-password']
 
@@ -8,8 +9,8 @@ const PUBLIC_ADMIN = ['/admin/login', '/admin/forgot-password']
  * Pages and server actions check admin rights again on the server.
  */
 export async function proxy(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const url = SUPABASE_URL
+  const key = SUPABASE_ANON_KEY
   const { pathname, search } = request.nextUrl
   const isPublicAdmin = PUBLIC_ADMIN.some((p) => pathname === p)
 

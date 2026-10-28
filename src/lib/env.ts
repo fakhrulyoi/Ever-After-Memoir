@@ -1,5 +1,17 @@
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+// Supabase's Vercel integration names the public key ..._PUBLISHABLE_KEY; older setups use ..._ANON_KEY.
+export const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+
+/** Server-only secret key (service_role / sb_secret_...). Accepts either name. */
+export function serviceRoleKey() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || ''
+}
+
+/** Salt for hashing visitor IPs in the rate limiter. Accepts either name. */
+export function ipSalt() {
+  return process.env.INQUIRY_IP_SALT || process.env.CONTACT_HASH_SALT || serviceRoleKey()
+}
 
 /** True when the public Supabase keys are configured. */
 export const isSupabaseConfigured = Boolean(

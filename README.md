@@ -48,7 +48,8 @@ Website portfolio wedding content creator (tema olive green) dengan admin dashbo
    git push -u origin main
    ```
 2. Di [vercel.com](https://vercel.com) → **Add New… → Project** → pilih repo tadi. Framework akan dikesan sebagai Next.js.
-3. Buka **Environment Variables** dan masukkan semua pemboleh ubah dalam jadual di bawah, kemudian tekan **Deploy**.
+3. Pastikan **Framework Preset = Next.js** (bukan “Other” — kalau Other, semua halaman jadi 404).
+4. Buka **Environment Variables** dan masukkan semua pemboleh ubah dalam jadual di bawah, kemudian tekan **Deploy**. Kalau guna *Supabase integration* di Vercel, nama yang integration isi pun diterima.
 
 **Cara B — Vercel CLI (terus dari komputer)**
 ```bash
@@ -64,10 +65,10 @@ npx vercel --prod
 | Nama | Jenis | Nilai |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | awam | Project URL Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | awam | anon / publishable key |
-| `SUPABASE_SERVICE_ROLE_KEY` | **rahsia** | service_role / secret key (hanya digunakan di server untuk simpan inquiry) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` (atau `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) | awam | anon / publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` (atau `SUPABASE_SECRET_KEY`) | **rahsia** | service_role / secret key (hanya digunakan di server untuk simpan inquiry) |
 | `NEXT_PUBLIC_SITE_URL` | awam | alamat website tanpa `/` di hujung, contoh `https://ever-after-memoir.vercel.app` |
-| `INQUIRY_IP_SALT` | rahsia | teks rawak panjang, contoh hasil `openssl rand -hex 32` |
+| `INQUIRY_IP_SALT` (atau `CONTACT_HASH_SALT`) | rahsia | teks rawak panjang, contoh hasil `openssl rand -hex 32` |
 | `RESEND_API_KEY` | rahsia, pilihan | untuk notifikasi emel inquiry (lihat bahagian 5) |
 | `INQUIRY_NOTIFY_EMAIL` | pilihan | emel yang menerima notifikasi |
 | `RESEND_FROM` | pilihan | pengirim yang disahkan di Resend, contoh `Ever After Memoir <hello@domain-anda.com>` |

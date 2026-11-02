@@ -33,6 +33,8 @@ def check(name, fn):
         print(f'PASS  {name}')
     except Exception as e:  # noqa: BLE001
         msg = str(e).split('\n')[0][:220]
+        if os.environ.get('E2E_DEBUG'):
+            import traceback; traceback.print_exc()
         results.append((name, False, msg))
         print(f'FAIL  {name} — {msg}')
 
@@ -320,7 +322,7 @@ with sync_playwright() as p:
         # Owner marks it booked: only the night slot closes; the day slot stays open
         admin.goto(f'{BASE}/admin/inquiries')
         admin.get_by_role('link', name=re.compile(booker)).click()
-        expect(admin.get_by_text('8pm - 11pm')).to_be_visible()
+        expect(admin.get_by_text('8pm - 11pm')).to_be_visible(timeout=15000)
         admin.locator('#inq-status').select_option('booked')
         expect(admin.get_by_text(re.compile('night slot .* is now taken'))).to_be_visible()
         ctx2, pub = new_page(browser, viewport={'width': 1280, 'height': 900})

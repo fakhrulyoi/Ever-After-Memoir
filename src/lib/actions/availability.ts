@@ -55,15 +55,27 @@ export async function setAvailability(days: string[], status: AvailabilityStatus
   const p = input.safeParse({ days, status, note, slot })
   if (!p.success) return { ok: false, error: 'Those dates could not be saved. Please try again.' }
   const sb = await createSupabaseServer()
-  const { error } =
-    p.data.status === 'available'
-      ? await sb.from('availability').delete().in('day', p.data.days)
-      : await sb
-          .from('availability')
-          .upsert(
-            p.data.days.map((day) => ({ day, status: p.data.status, note: p.data.note, slot: p.data.status === 'limited' ? p.data.slot : null, updated_by: admin.userId })),
-            { onConflict: 'day' },
-          )
+  const rows = (withSlot: boolean) =>
+    p.data.days.map((day) => ({
+      day,
+      status: p.data.status,
+      note: p.data.note,
+      ...(withSlot ? { slot: p.data.status === 'limited' ? p.data.slot : null } : {}),
+      updated_by: admin.userId,
+    }))
+  let error: { message: string } | null = null
+  if (p.data.status === 'available') {
+    ;({ error } = await sb.from('availability').delete().in('day', p.data.days))
+  } else {
+    ;({ error } = await sb.from('availability').upsert(rows(true), { onConflict: 'day' }))
+    // Database without the slot column yet (before 0005_slots.sql)
+    if (error && /slot/.test(error.message)) {
+      if (p.data.status === 'limited' && p.data.slot) {
+        return { ok: false, error: 'Day and night slots need the 0005 database update. Run supabase/migrations/0005_slots.sql in the Supabase SQL Editor, then try again.' }
+      }
+      ;({ error } = await sb.from('availability').upsert(rows(false), { onConflict: 'day' }))
+    }
+  }
   if (error) return { ok: false, error: friendlyDbError(error.message) }
   revalidatePath('/', 'layout')
   return { ok: true }

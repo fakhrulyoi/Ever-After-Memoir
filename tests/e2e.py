@@ -322,7 +322,8 @@ with sync_playwright() as p:
         # Owner marks it booked: only the night slot closes; the day slot stays open
         admin.goto(f'{BASE}/admin/inquiries')
         admin.get_by_role('link', name=re.compile(booker)).click()
-        expect(admin.get_by_text('8pm - 11pm')).to_be_visible(timeout=15000)
+        admin.wait_for_url(re.compile(r'/admin/inquiries/[0-9a-f-]+$'))
+        expect(admin.get_by_text('Cover time', exact=True)).to_be_visible()
         admin.locator('#inq-status').select_option('booked')
         expect(admin.get_by_text(re.compile('night slot .* is now taken'))).to_be_visible()
         ctx2, pub = new_page(browser, viewport={'width': 1280, 'height': 900})

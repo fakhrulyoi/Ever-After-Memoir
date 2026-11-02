@@ -58,13 +58,13 @@ export function AdminNav({ email, newInquiries }: { email: string; newInquiries:
     <>
       <aside className="on-dark sticky top-0 hidden h-svh w-64 shrink-0 flex-col justify-between bg-olive-deep p-5 text-ivory lg:flex">
         <div>
-          <Link href="/admin" className="mb-8 block px-3 font-[family-name:var(--font-display)] text-2xl">Ever After <em>Memoir</em></Link>
+          <Link href="/admin" className="mb-8 block px-3 font-[family-name:var(--font-display)] text-2xl">everafter.<em>memoir</em></Link>
           {nav}
         </div>
         {footer}
       </aside>
       <div className="on-dark sticky top-0 z-40 flex items-center justify-between bg-olive-deep px-4 py-3 text-ivory lg:hidden">
-        <Link href="/admin" className="font-[family-name:var(--font-display)] text-xl">Ever After <em>Memoir</em></Link>
+        <Link href="/admin" className="font-[family-name:var(--font-display)] text-xl">everafter.<em>memoir</em></Link>
         <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="admin-menu" aria-label={open ? 'Close menu' : 'Open menu'} className="p-1">
           {open ? <IconClose size={24} /> : <IconMenu size={24} />}
         </button>

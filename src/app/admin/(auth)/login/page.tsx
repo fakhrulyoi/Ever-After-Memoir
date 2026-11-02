@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const notice = !isSupabaseConfigured ? NOTICES.setup : sp.e ? NOTICES[sp.e] : sp.signed_out ? 'You have signed out.' : undefined
   return (
     <>
-      <p className="mb-2 font-[family-name:var(--font-display)] text-2xl text-olive-deep">Ever After <em>Memoir</em></p>
+      <p className="mb-2 font-[family-name:var(--font-display)] text-2xl text-olive-deep">everafter.<em>memoir</em></p>
       <h1 className="display mb-8 text-5xl text-olive-deep">Sign in</h1>
       <LoginForm next={sp.next ?? '/admin'} notice={notice} />
     </>

@@ -60,6 +60,10 @@ export interface InquiryRow {
   notes: string
   status: 'new' | 'contacted' | 'booked' | 'closed'
   source: 'form' | 'booking'
+  /** Booking calendar only (after 0005_slots.sql) */
+  slot?: 'day' | 'night' | '' | null
+  cover_time?: string
+  instagram?: string
   created_at: string
   updated_at: string
 }
@@ -69,7 +73,7 @@ export async function listInquiries(): Promise<InquiryRow[]> {
   const sb = await createSupabaseServer()
   const { data, error } = await sb
     .from('inquiries')
-    .select('id, full_name, partner_name, email, whatsapp, wedding_date, location, celebration_type, service_interest, budget, notes, status, source, created_at, updated_at')
+    .select('*')
     .order('created_at', { ascending: false })
     .limit(2000)
   if (error) throw new Error(error.message)

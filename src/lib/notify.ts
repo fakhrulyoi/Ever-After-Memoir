@@ -5,7 +5,7 @@ import { SITE_URL } from './env'
 export async function notifyOwner(fields: Record<string, string>, opts: { id: string; subject: string; replyTo?: string }) {
   const key = process.env.RESEND_API_KEY
   const to = process.env.INQUIRY_NOTIFY_EMAIL
-  const from = process.env.RESEND_FROM || 'Ever After Memoir <onboarding@resend.dev>'
+  const from = process.env.RESEND_FROM || 'everafter.memoir <onboarding@resend.dev>'
   if (!key || !to) return
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
   const rows = Object.entries(fields)

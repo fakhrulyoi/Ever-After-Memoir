@@ -7,14 +7,19 @@ import type { AvailabilityStatus } from '@/lib/content/types'
 import { addDays, addMonths, daysInMonth, formatLong, formatMonth, monthStart, todayISO, weekdayMon } from '@/lib/dates'
 import { Button, inputClass } from './ui'
 
-type Choice = AvailabilityStatus | 'available'
+/** What the owner can set. A day has two slots (day / night). */
+type Choice = 'available' | 'dayTaken' | 'nightTaken' | 'booked' | 'unavailable'
 
-const STYLE: Record<Choice, { cell: string; label: string; dot: string }> = {
+const STYLE: Record<Choice | 'limited', { cell: string; label: string; dot: string }> = {
   available: { cell: 'bg-white/70 text-charcoal hover:border-olive-deep', label: 'Available', dot: 'bg-white border border-charcoal/25' },
-  limited: { cell: 'bg-sage/45 text-olive-deep', label: 'Few slots left', dot: 'bg-sage' },
-  booked: { cell: 'bg-olive-deep text-ivory', label: 'Booked', dot: 'bg-olive-deep' },
+  dayTaken: { cell: 'bg-[linear-gradient(180deg,#a5ad95_0_50%,rgba(255,255,255,.7)_50%)] text-olive-deep', label: 'Day taken (night open)', dot: 'bg-[linear-gradient(180deg,#a5ad95_0_50%,#fff_50%)] border border-charcoal/20' },
+  nightTaken: { cell: 'bg-[linear-gradient(0deg,#a5ad95_0_50%,rgba(255,255,255,.7)_50%)] text-olive-deep', label: 'Night taken (day open)', dot: 'bg-[linear-gradient(0deg,#a5ad95_0_50%,#fff_50%)] border border-charcoal/20' },
+  limited: { cell: 'bg-sage/45 text-olive-deep', label: 'One slot left', dot: 'bg-sage' },
+  booked: { cell: 'bg-olive-deep text-ivory', label: 'Full (both slots)', dot: 'bg-olive-deep' },
   unavailable: { cell: 'bg-[repeating-linear-gradient(135deg,#eeeae0_0,#eeeae0_4px,#e2dccf_4px,#e2dccf_8px)] text-ink-soft', label: 'Not available', dot: 'bg-taupe' },
 }
+
+const LEGEND: Choice[] = ['available', 'dayTaken', 'nightTaken', 'booked', 'unavailable']
 
 export function AvailabilityManager({ initialDays, inquiries }: { initialDays: AdminDay[]; inquiries: DayInquiry[] }) {
   const today = todayISO()
@@ -32,7 +37,12 @@ export function AvailabilityManager({ initialDays, inquiries }: { initialDays: A
   }, [inquiries])
 
   const months = [view, addMonths(view, 1), addMonths(view, 2)]
-  const statusOf = (d: string): Choice => days.get(d)?.status ?? 'available'
+  const statusOf = (d: string): Choice | 'limited' => {
+    const row = days.get(d)
+    if (!row) return 'available'
+    if (row.status === 'limited') return row.slot === 'day' ? 'dayTaken' : row.slot === 'night' ? 'nightTaken' : 'limited'
+    return row.status
+  }
 
   const click = (d: string, shift: boolean) => {
     if (shift && anchor) {
@@ -50,14 +60,16 @@ export function AvailabilityManager({ initialDays, inquiries }: { initialDays: A
   const apply = async (status: Choice) => {
     if (!selected.length) return
     setSaving(status)
-    const res = await setAvailability(selected, status, note)
+    const dbStatus: AvailabilityStatus | 'available' = status === 'dayTaken' || status === 'nightTaken' ? 'limited' : status
+    const slot = status === 'dayTaken' ? 'day' : status === 'nightTaken' ? 'night' : null
+    const res = await setAvailability(selected, dbStatus, note, slot)
     setSaving(null)
     if (!res.ok) return toast.error(res.error)
     setDays((prev) => {
       const next = new Map(prev)
       for (const d of selected) {
-        if (status === 'available') next.delete(d)
-        else next.set(d, { day: d, status, note })
+        if (dbStatus === 'available') next.delete(d)
+        else next.set(d, { day: d, status: dbStatus, slot, note })
       }
       return next
     })
@@ -77,7 +89,7 @@ export function AvailabilityManager({ initialDays, inquiries }: { initialDays: A
             <Button variant="ghost" onClick={() => setView(monthStart(today))}>This month</Button>
           </div>
           <ul className="flex flex-wrap gap-4 text-xs text-ink-soft">
-            {(Object.keys(STYLE) as Choice[]).map((k) => (
+            {LEGEND.map((k) => (
               <li key={k} className="flex items-center gap-1.5"><span className={`h-3 w-3 rounded-full ${STYLE[k].dot}`} />{STYLE[k].label}</li>
             ))}
             <li className="flex items-center gap-1.5"><span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#b98a2e] text-[0.5625rem] font-bold text-white">2</span>Open inquiries</li>
@@ -126,7 +138,7 @@ export function AvailabilityManager({ initialDays, inquiries }: { initialDays: A
           <>
             <h2 className="display text-2xl text-olive-deep">Choose dates</h2>
             <p className="text-sm text-ink-soft">
-              Dates you don’t mark are shown as available. When you mark an inquiry as <strong>Booked</strong>, its date is closed here automatically.
+              Dates you don’t mark are shown as available. Each date has a <strong>day</strong> and a <strong>night</strong> slot. When you mark a booking inquiry as <strong>Booked</strong>, its slot is taken here automatically.
             </p>
           </>
         ) : (
@@ -140,11 +152,13 @@ export function AvailabilityManager({ initialDays, inquiries }: { initialDays: A
               <input className={inputClass} value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Aina & Hakim, Kuantan" />
             </label>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="primary" busy={saving === 'booked'} onClick={() => apply('booked')}>Booked</Button>
-              <Button busy={saving === 'limited'} onClick={() => apply('limited')}>Few slots left</Button>
+              <Button busy={saving === 'dayTaken'} onClick={() => apply('dayTaken')}>Day taken</Button>
+              <Button busy={saving === 'nightTaken'} onClick={() => apply('nightTaken')}>Night taken</Button>
+              <Button variant="primary" busy={saving === 'booked'} onClick={() => apply('booked')}>Full day</Button>
               <Button busy={saving === 'unavailable'} onClick={() => apply('unavailable')}>Not available</Button>
-              <Button busy={saving === 'available'} onClick={() => apply('available')}>Available</Button>
+              <Button className="col-span-2" busy={saving === 'available'} onClick={() => apply('available')}>Available (clear)</Button>
             </div>
+            <p className="text-xs text-ink-soft">Each date has two slots. “Day taken” keeps the night open for couples, and the other way round.</p>
             <Button variant="ghost" className="w-full" onClick={() => setSelected([])}>Clear selection</Button>
             {selInquiries.length > 0 && (
               <div className="border-t border-charcoal/10 pt-4">

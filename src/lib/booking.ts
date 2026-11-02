@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { AvailabilityStatus } from './content/types'
+import type { AvailabilityDay, Slot } from './content/types'
 import { addDays, addMonths, todayISO } from './dates'
 
 export interface BookingWindow {
@@ -14,21 +14,30 @@ export function bookingRange(w: BookingWindow, today = todayISO()) {
 
 export type DayState = 'available' | 'limited' | 'booked' | 'unavailable' | 'outside'
 
-export function dayState(iso: string, map: Map<string, AvailabilityStatus>, range: { first: string; last: string }): DayState {
+export const SLOTS: Slot[] = ['day', 'night']
+
+export function dayState(iso: string, map: Map<string, AvailabilityDay>, range: { first: string; last: string }): DayState {
   if (iso < range.first || iso > range.last) return 'outside'
-  return map.get(iso) ?? 'available'
+  return map.get(iso)?.status ?? 'available'
 }
 
 export const isBookable = (s: DayState) => s === 'available' || s === 'limited'
 
+/** Slots still open on a day (a "limited" day without a slot predates slots: both stay open). */
+export function openSlots(row: AvailabilityDay | undefined): Slot[] {
+  if (!row) return SLOTS
+  if (row.status === 'booked' || row.status === 'unavailable') return []
+  if (row.status === 'limited' && row.slot) return SLOTS.filter((s) => s !== row.slot)
+  return SLOTS
+}
+
 export const bookingSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'err.calendarDate'),
+  slot: z.enum(['day', 'night'], { message: 'err.slot' }),
   fullName: z.string().trim().min(1, 'err.name').max(120, 'err.nameLong'),
-  partnerName: z.string().trim().max(120, 'err.long').default(''),
-  celebrationType: z.string().trim().min(1, 'err.type').max(80),
-  serviceInterest: z.string().trim().min(1, 'err.service').max(120),
   location: z.string().trim().min(1, 'err.location').max(200),
-  notes: z.string().trim().max(1000, 'err.notes').default(''),
+  coverTime: z.string().trim().min(1, 'err.coverTime').max(80, 'err.long'),
+  instagram: z.string().trim().max(120, 'err.long').default(''),
   email: z.string().trim().max(254).email('err.email').or(z.literal('')).default(''),
   consent: z.literal(true, { message: 'err.consent' }),
   website: z.string().max(500).default(''),
@@ -44,12 +53,18 @@ export interface MessageValues {
   /** Always English (kept for older message templates) */
   date_en: string
   name: string
-  partner: string
-  type: string
-  service: string
+  /** Day / Night (Siang / Malam) */
+  slot: string
   location: string
-  notes: string
+  /** Cover time the couple typed, e.g. 11am – 4pm */
+  time: string
+  instagram: string
   ref: string
+  // Older templates may still use these
+  partner?: string
+  type?: string
+  service?: string
+  notes?: string
 }
 
 /** Fill the owner's WhatsApp template. Lines whose placeholders are all empty are dropped. */

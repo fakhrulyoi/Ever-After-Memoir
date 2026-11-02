@@ -1,7 +1,7 @@
 // Starter content in English with a Malay version (`ms`). Used to seed the
 // database and as a fallback when the database is not connected yet.
 // Everything here is editable in /admin. Photos and videos in /public/brand
-// are Ever After Memoir's own work. The three stories use real photos with
+// are everafter.memoir's own work. The three stories use real photos with
 // example words, and are marked as samples until the owner rewrites them.
 
 import type {
@@ -43,7 +43,7 @@ export const MEDIA_FILES: MediaFile[] = [
   photo(8, 'pelamin-wide.jpg', 423, 532, 'Couple seated on the pelamin surrounded by white flowers'),
   photo(9, 'pelamin-laugh.jpg', 424, 533, 'Groom and bride sharing a laugh on the pelamin'),
   photo(10, 'rings-detail.jpg', 423, 533, 'Close-up of the rings and henna'),
-  photo(15, 'og.jpg', 1200, 630, 'Ever After Memoir'),
+  photo(15, 'og.jpg', 1200, 630, 'everafter.memoir'),
   photo(16, 'bride-window.jpg', 1600, 2133, 'Bride in a beaded veil holding orchids, standing by the window light'),
   photo(17, 'pelamin-decor.jpg', 1600, 2133, 'Pelamin with deep red drapes, pink and red flowers and crystal chandeliers'),
   photo(18, 'engagement-sign.jpg', 1600, 2133, 'Engagement welcome sign on a wooden easel between vases of flowers'),
@@ -99,6 +99,33 @@ const reel = (file: string, caption: string) => ({ video: m(`${file}.mp4`), post
 // Settings
 // ---------------------------------------------------------------------------
 export const DEFAULT_BOOKING_MESSAGE = [
+  'Hi everafter.memoir! I’d like to book a date.',
+  '',
+  'Name: {name}',
+  'Date: {date}',
+  'Slot: {slot}',
+  'Location: {location}',
+  'Cover time: {time}',
+  'Instagram: {instagram}',
+  '',
+  'Ref: {ref}',
+].join('\n')
+
+export const DEFAULT_BOOKING_MESSAGE_MS = [
+  'Hai everafter.memoir! Saya nak book tarikh.',
+  '',
+  'Nama: {name}',
+  'Tarikh: {date}',
+  'Slot: {slot}',
+  'Tempat: {location}',
+  'Cover time: {time}',
+  'IG pengantin: {instagram}',
+  '',
+  'Rujukan: {ref}',
+].join('\n')
+
+/** The version 4 messages, so migration 0005 can tell whether the owner changed them */
+export const PREVIOUS_BOOKING_MESSAGE = [
   'Hi Ever After Memoir! I’d like to book {date}.',
   '',
   'Name: {name}',
@@ -111,7 +138,8 @@ export const DEFAULT_BOOKING_MESSAGE = [
   'Reference: {ref}',
 ].join('\n')
 
-export const DEFAULT_BOOKING_MESSAGE_MS = [
+
+export const PREVIOUS_BOOKING_MESSAGE_MS = [
   'Hai Ever After Memoir! Saya nak tempah tarikh {date}.',
   '',
   'Nama: {name}',
@@ -123,21 +151,23 @@ export const DEFAULT_BOOKING_MESSAGE_MS = [
   '',
   'Rujukan: {ref}',
 ].join('\n')
+export const PREVIOUS_TAGLINE_MS = 'Hari anda, seperti yang dirasa.'
+export const PREVIOUS_SITE_TITLE = 'Ever After Memoir'
 
 const CELEBRATIONS = ['Solemnisation (akad nikah)', 'Reception (bersanding)', 'Solemnisation and reception', 'Engagement (tunang)', 'Something else']
 const CELEBRATIONS_MS = ['Akad nikah', 'Majlis persandingan', 'Akad nikah dan persandingan', 'Majlis pertunangan', 'Lain-lain']
 
 export const DEFAULT_SETTINGS: SettingsContent = {
-  siteTitle: 'Ever After Memoir',
+  siteTitle: 'everafter.memoir',
   tagline: 'Your day, as it felt.',
   metaDescription:
-    'Ever After Memoir is a wedding content creator team capturing honest moments, fleeting details and the beautiful in-between — in reels, photos and little films.',
+    'everafter.memoir is a wedding content creator team capturing honest moments, fleeting details and the beautiful in-between — in reels, photos and little films.',
   logo: null,
   favicon: null,
   ogImage: m('og.jpg'),
   contactEmail: '',
   whatsappNumber: '',
-  whatsappMessage: "Hi Ever After Memoir, I'd love to ask about my wedding.",
+  whatsappMessage: "Hi everafter.memoir, I'd love to ask about my wedding.",
   instagramUrl: 'https://www.instagram.com/everafter.memoir/',
   tiktokUrl: 'https://www.tiktok.com/@everafter.memoir/',
   footerNote: 'Wedding content and little films, made for remembering.',
@@ -151,11 +181,11 @@ export const DEFAULT_SETTINGS: SettingsContent = {
   bookingMonthsAhead: 18,
   bookingMessage: DEFAULT_BOOKING_MESSAGE,
   ms: {
-    tagline: 'Hari anda, seperti yang dirasa.',
+    tagline: 'Simpan rasa hari bahagia korang.',
     metaDescription:
-      'Ever After Memoir ialah pasukan wedding content creator yang merakam detik jujur, butiran kecil dan segala yang indah di antaranya — dalam reels, gambar dan video pendek.',
-    whatsappMessage: 'Hai Ever After Memoir, saya nak tanya tentang majlis perkahwinan saya.',
-    footerNote: 'Kandungan perkahwinan dan video pendek, untuk dikenang.',
+      'everafter.memoir, team wedding content creator yang rakam momen jujur, detail kecil dan semua yang indah di celah-celah majlis. Reels, gambar dan video pendek.',
+    whatsappMessage: 'Hai everafter.memoir, nak tanya pasal majlis kahwin saya.',
+    footerNote: 'Content kahwin dan video pendek, untuk dikenang lama-lama.',
     bookingMessage: DEFAULT_BOOKING_MESSAGE_MS,
     ...Object.fromEntries(CELEBRATIONS_MS.map((c, i) => [`celebrationTypes.${i}`, c])),
   },
@@ -169,13 +199,13 @@ const checkDate = { label: 'Check your date', href: '/contact#book' }
 export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
   home: {
     title: 'Home',
-    seoTitle: 'Ever After Memoir — Wedding content creator',
+    seoTitle: 'everafter.memoir — Wedding content creator',
     seoDescription:
-      'Wedding content creation, reels and little films by Ever After Memoir. Honest moments, fleeting details and the beautiful in-between.',
+      'Wedding content creation, reels and little films by everafter.memoir. Honest moments, fleeting details and the beautiful in-between.',
     ms: {
       title: 'Utama',
-      seoTitle: 'Ever After Memoir — Wedding content creator',
-      seoDescription: 'Wedding content creator, reels dan video pendek oleh Ever After Memoir. Detik jujur, butiran kecil dan segala yang indah di antaranya.',
+      seoTitle: 'everafter.memoir — Wedding content creator',
+      seoDescription: 'Wedding content creator di Malaysia. Reels, gambar dan video pendek dari majlis kahwin korang, oleh everafter.memoir.',
     },
     sections: [
       {
@@ -197,10 +227,10 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         showTimecode: false,
         ms: {
           eyebrow: 'Wedding content creator',
-          headline: 'Hari anda,\n*seperti yang dirasa.*',
-          body: 'Detik yang jujur, butiran yang sekejap, dan segala yang indah di antaranya — dirakam dengan teliti, supaya anda dapat merasainya semula lama selepas hari itu berlalu.',
-          'primary.label': 'Semak tarikh anda',
-          'secondary.label': 'Tonton reels kami',
+          headline: 'Hari bahagia korang,\n*kami simpan rasanya.*',
+          body: 'Gelak tawa, air mata, renungan curi-curi masa akad. Semua momen kecil tu kami rakam, supaya korang boleh rasa balik bila-bila masa.',
+          'primary.label': 'Check tarikh',
+          'secondary.label': 'Tengok reels kami',
         },
       },
       {
@@ -213,9 +243,9 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         media: m('rings-henna.jpg'),
         imageSide: 'left',
         ms: {
-          eyebrow: 'Apa yang kami simpan',
-          headline: 'Bukan sekadar rupanya.\n*Tetapi rasanya.*',
-          body: 'Tawa yang gugup. Tangan yang menggeletar. Pandangan kecil yang tiada siapa perasan. Kami rakam detik-detik di antara detik — yang menjadikan kisah anda milik anda sepenuhnya.',
+          eyebrow: 'Apa yang kami kejar',
+          headline: 'Bukan sekadar cantik.\n*Tapi rasa dia sampai.*',
+          body: 'Tangan yang menggigil masa lafaz akad. Mak yang curi-curi lap air mata. Kawan-kawan yang tak berhenti mengusik. Benda-benda kecil macam ni la yang kami cari, sebab ni la yang korang akan rindu nanti.',
         },
       },
       {
@@ -240,17 +270,17 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
           reel('hall-details', 'Little details'),
         ],
         ms: {
-          headline: 'Video kecil.\n*Rasa yang kekal.*',
-          body: 'Hari anda terbentang dalam seribu detik kecil. Kami himpunkan semuanya supaya anda dapat merasainya sekali lagi.',
+          headline: 'Video pendek.\n*Kenangan panjang.*',
+          body: 'Satu hari, beribu momen kecil. Kami cantumkan jadi video yang buat korang senyum setiap kali tengok.',
           'reels.0.caption': 'Sah!',
           'reels.1.caption': 'Bersiap',
-          'reels.2.caption': 'Para pengapit',
-          'reels.3.caption': 'Di pelamin',
+          'reels.2.caption': 'Geng pengapit',
+          'reels.3.caption': 'Atas pelamin',
           'reels.4.caption': 'Potong kek',
-          'reels.5.caption': 'Genggam lebih lama',
-          'reels.6.caption': 'Sebelum tetamu tiba',
+          'reels.5.caption': 'Pegang erat-erat',
+          'reels.6.caption': 'Sebelum tetamu sampai',
           'reels.7.caption': 'Venue & vendor',
-          'reels.8.caption': 'Butiran kecil',
+          'reels.8.caption': 'Detail kecil',
         },
       },
       {
@@ -264,9 +294,9 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         link: { label: 'See every story', href: '/stories' },
         ms: {
           eyebrow: 'Kisah',
-          headline: 'Hari yang *dikenang.*',
-          body: 'Beberapa kisah perkahwinan, diceritakan seperti yang dirasa.',
-          'link.label': 'Lihat semua kisah',
+          headline: 'Majlis yang *kami sempat rakam.*',
+          body: 'Antara majlis yang kami rakam, dan cerita di sebaliknya.',
+          'link.label': 'Tengok semua kisah',
         },
       },
       {
@@ -277,7 +307,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         focal: '50% 50%',
         quote: 'Hold on\n*a little longer.*',
         caption: '',
-        ms: { quote: 'Genggam\n*lebih lama.*' },
+        ms: { quote: 'Pegang\n*lama sikit.*' },
       },
       {
         key: 'services',
@@ -286,7 +316,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         eyebrow: 'What we offer',
         headline: 'Ways we can *tell your day.*',
         link: { label: 'View services', href: '/services' },
-        ms: { eyebrow: 'Apa yang kami tawarkan', headline: 'Cara kami *menceritakan hari anda.*', 'link.label': 'Lihat servis' },
+        ms: { eyebrow: 'Servis', headline: 'Apa yang *kami boleh buat.*', 'link.label': 'Tengok servis' },
       },
       {
         key: 'testimonials',
@@ -297,10 +327,10 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         manifesto:
           'We believe in unposed laughter, in the hush before the vows, in hands that hold on a little longer. We believe the best part of your day is the part you were too busy living to notice.',
         ms: {
-          eyebrow: 'Kata-kata mereka',
-          headline: 'Daripada pasangan kami',
+          eyebrow: 'Kata mereka',
+          headline: 'Dari pasangan kami',
           manifesto:
-            'Kami percaya pada tawa yang tidak dibuat-buat, pada sunyi sebelum lafaz akad, pada tangan yang menggenggam sedikit lebih lama. Bahagian terindah hari anda ialah bahagian yang anda terlalu sibuk menjalaninya untuk perasan.',
+            'Kami suka gelak yang tak dibuat-buat, sunyi sekejap sebelum akad, dan tangan yang pegang lama sikit. Selalunya momen paling best hari tu adalah momen yang korang sendiri tak sempat perasan.',
         },
       },
       {
@@ -310,7 +340,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         eyebrow: 'Follow along',
         headline: '@everafter.memoir',
         body: 'Behind the scenes, little reels and the moments in between — on Instagram and TikTok.',
-        ms: { eyebrow: 'Ikuti kami', body: 'Di sebalik tabir, reels kecil dan detik-detik di antaranya — di Instagram dan TikTok.' },
+        ms: { eyebrow: 'Follow kami', body: 'Behind the scenes, reels dan momen-momen kecil. Semua ada kat Instagram dan TikTok.' },
       },
       {
         key: 'cta',
@@ -320,18 +350,18 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         body: 'See which dates are still open, then say hello on WhatsApp.',
         link: checkDate,
         ms: {
-          headline: 'Mari simpan kenangan\n*anda dekat di hati.*',
-          body: 'Lihat tarikh yang masih kosong, kemudian sapa kami di WhatsApp.',
-          'link.label': 'Semak tarikh anda',
+          headline: 'Jom simpan\n*kenangan korang.*',
+          body: 'Check tarikh yang masih kosong, lepas tu terus WhatsApp kami.',
+          'link.label': 'Check tarikh',
         },
       },
     ],
   },
   stories: {
     title: 'Stories',
-    seoTitle: 'Stories — Ever After Memoir',
-    seoDescription: 'Wedding stories by Ever After Memoir — candid moments, quiet details and little films.',
-    ms: { title: 'Kisah', seoTitle: 'Kisah — Ever After Memoir', seoDescription: 'Kisah perkahwinan oleh Ever After Memoir — detik spontan, butiran kecil dan video pendek.' },
+    seoTitle: 'Stories — everafter.memoir',
+    seoDescription: 'Wedding stories by everafter.memoir — candid moments, quiet details and little films.',
+    ms: { title: 'Kisah', seoTitle: 'Kisah — everafter.memoir', seoDescription: 'Majlis-majlis yang kami rakam: momen spontan, detail kecil dan video pendek.' },
     sections: [
       {
         key: 'intro',
@@ -344,8 +374,8 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         media: m('engagement-sign.jpg'),
         ms: {
           eyebrow: 'Kisah kami',
-          headline: 'Setiap perkahwinan\n*terasa berbeza.*',
-          body: 'Ada yang meriah dan bergemerlapan, ada yang tenang dan intim. Inilah sebahagiannya, diceritakan seperti yang dirasa.',
+          headline: 'Setiap majlis\n*ada rasa sendiri.*',
+          body: 'Ada yang meriah sampai malam, ada yang kecil dan intim. Ni antara majlis yang kami sempat rakam.',
         },
       },
       { key: 'grid', type: 'stories_grid', visible: true, showFilters: true },
@@ -356,15 +386,15 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         headline: 'Your story\n*could be next.*',
         body: 'See which dates are still open.',
         link: checkDate,
-        ms: { headline: 'Kisah anda\n*mungkin seterusnya.*', body: 'Lihat tarikh yang masih kosong.', 'link.label': 'Semak tarikh anda' },
+        ms: { headline: 'Lepas ni,\n*kisah korang pula.*', body: 'Tengok tarikh yang masih kosong.', 'link.label': 'Check tarikh' },
       },
     ],
   },
   services: {
     title: 'Services',
-    seoTitle: 'Services — Ever After Memoir',
-    seoDescription: 'Wedding content creator (WCC) coverage, highlight films and personalised coverage by Ever After Memoir.',
-    ms: { title: 'Servis', seoTitle: 'Servis — Ever After Memoir', seoDescription: 'Liputan wedding content creator (WCC), video highlight dan liputan mengikut citarasa oleh Ever After Memoir.' },
+    seoTitle: 'Services — everafter.memoir',
+    seoDescription: 'Wedding content creator (WCC) coverage, highlight films and personalised coverage by everafter.memoir.',
+    ms: { title: 'Servis', seoTitle: 'Servis — everafter.memoir', seoDescription: 'Servis wedding content creator (WCC), video highlight dan liputan ikut citarasa oleh everafter.memoir.' },
     sections: [
       {
         key: 'intro',
@@ -377,8 +407,8 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         media: m('just-married-poster.jpg'),
         ms: {
           eyebrow: 'Servis',
-          headline: 'Dibentuk mengikut\n*hari anda.*',
-          body: 'Setiap pasangan mengingati perkara yang berbeza. Pilih apa yang paling penting bagi anda, dan kami akan bentuk liputan di sekelilingnya.',
+          headline: 'Ikut cara\n*korang nak.*',
+          body: 'Setiap pasangan nak simpan benda yang lain-lain. Bagitahu kami apa yang paling penting, kami susun liputan ikut tu.',
         },
       },
       {
@@ -388,8 +418,8 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         addonsHeadline: 'Little extras',
         footnote: 'Every wedding is different, so every quote is too. Pick your date and we will reply with options for your day.',
         ms: {
-          addonsHeadline: 'Tambahan kecil',
-          footnote: 'Setiap majlis berbeza, jadi setiap sebut harga pun berbeza. Pilih tarikh anda dan kami akan balas dengan pilihan untuk hari anda.',
+          addonsHeadline: 'Tambahan',
+          footnote: 'Setiap majlis lain-lain, jadi harga pun ikut majlis. Pilih tarikh dulu, nanti kami bagi pilihan yang sesuai.',
         },
       },
       {
@@ -399,18 +429,18 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         headline: 'Not sure what\n*you need?*',
         body: "Tell us about your day and we'll help you choose.",
         link: checkDate,
-        ms: { headline: 'Belum pasti\n*apa yang diperlukan?*', body: 'Ceritakan tentang majlis anda dan kami akan bantu anda memilih.', 'link.label': 'Semak tarikh anda' },
+        ms: { headline: 'Tak pasti\n*nak ambil yang mana?*', body: 'Cerita sikit pasal majlis korang, kami tolong pilihkan.', 'link.label': 'Check tarikh' },
       },
     ],
   },
   about: {
     title: 'About',
-    seoTitle: 'About — Ever After Memoir',
-    seoDescription: 'Ever After Memoir is a team of two wedding content creators, made for the moments that deserve to be remembered beyond the photographs.',
+    seoTitle: 'About — everafter.memoir',
+    seoDescription: 'everafter.memoir is a team of two wedding content creators, made for the moments that deserve to be remembered beyond the photographs.',
     ms: {
       title: 'Tentang Kami',
-      seoTitle: 'Tentang Kami — Ever After Memoir',
-      seoDescription: 'Ever After Memoir ialah pasukan dua orang wedding content creator, untuk detik-detik yang layak dikenang melangkaui gambar.',
+      seoTitle: 'Tentang Kami — everafter.memoir',
+      seoDescription: 'everafter.memoir, team dua orang wedding content creator yang rakam momen-momen kecil hari bahagia korang.',
     },
     sections: [
       {
@@ -420,12 +450,12 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         layout: 'side',
         eyebrow: 'About',
         headline: 'Behind every memoir,\n*a thousand little feelings.*',
-        body: 'Ever After Memoir was created for the moments that deserve to be remembered beyond the photographs — the laughter, the happy tears, the quiet glances, and all the beautiful in-between.',
+        body: 'everafter.memoir was created for the moments that deserve to be remembered beyond the photographs — the laughter, the happy tears, the quiet glances, and all the beautiful in-between.',
         media: m('bride-window.jpg'),
         ms: {
           eyebrow: 'Tentang kami',
-          headline: 'Di sebalik setiap memoir,\n*seribu rasa kecil.*',
-          body: 'Ever After Memoir lahir untuk detik-detik yang layak dikenang melangkaui gambar — gelak tawa, air mata gembira, pandangan yang senyap, dan segala yang indah di antaranya.',
+          headline: 'Setiap memoir,\n*ada seribu rasa.*',
+          body: 'everafter.memoir bermula sebab kami percaya majlis kahwin bukan sekadar gambar cantik. Ia pasal gelak tawa, air mata gembira, renungan senyap, dan semua benda kecil di celah-celahnya.',
         },
       },
       {
@@ -440,11 +470,11 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
           { name: '', role: 'Wedding content creator & photographer', bio: '', photo: null },
         ],
         ms: {
-          eyebrow: 'Pasukan kami',
-          headline: 'Dua pencipta,\n*satu cara melihat.*',
-          body: 'Kami pasukan dua orang — wedding content creator, dan juga jurugambar. Seorang biasanya berada di tempat gelak tawa; seorang lagi menanti detik sejurus selepasnya.',
+          eyebrow: 'Kami berdua',
+          headline: 'Dua orang,\n*satu cara pandang.*',
+          body: 'Kami team dua orang. Wedding content creator, dan photographer sekali. Selalunya sorang ada dekat tempat orang tengah gelak, sorang lagi tunggu momen lepas tu.',
           'members.0.role': 'Wedding content creator',
-          'members.1.role': 'Wedding content creator & jurugambar',
+          'members.1.role': 'Wedding content creator & photographer',
         },
       },
       {
@@ -457,9 +487,9 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         media: m('getting-ready-poster.jpg'),
         imageSide: 'right',
         ms: {
-          eyebrow: 'Cara kami bekerja',
-          headline: 'Cukup dekat untuk merasainya.\n*Cukup senyap untuk tidak terlepas apa-apa.*',
-          body: 'Kami kekal dekat dengan detik yang penting, dan menjauh daripada detik yang sepatutnya berlaku dengan sendiri.\n\nHasilnya ialah kandungan yang terasa seperti berada di sana semula — saat bersiap, lafaz akad, orang yang anda sayang, dan segalanya di antaranya.',
+          eyebrow: 'Cara kami kerja',
+          headline: 'Cukup dekat untuk rasa.\n*Cukup senyap untuk tak terlepas apa-apa.*',
+          body: 'Kami duduk dekat dengan momen yang penting, dan tak kacau momen yang patut berlaku dengan sendiri.\n\nHasilnya, video dan gambar yang buat korang rasa macam berada kat situ semula. Masa bersiap, masa akad, orang-orang tersayang, dan semua yang ada di celah-celahnya.',
         },
       },
       {
@@ -478,12 +508,12 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         ],
         link: { label: 'See the stories', href: '/stories' },
         ms: {
-          eyebrow: 'Di antaranya',
-          headline: 'Detik yang\n*tidak dirancang.*',
-          body: 'Kucupan di tangan. Tawa di pelamin. Cincin, akhirnya di tempatnya.',
+          eyebrow: 'Di celah-celah',
+          headline: 'Momen yang\n*tak dirancang.*',
+          body: 'Cium tangan. Gelak atas pelamin. Cincin yang akhirnya tersarung.',
           'items.0.caption': 'Salam',
-          'items.3.caption': 'Selamanya, di satu jari',
-          'link.label': 'Lihat kisah',
+          'items.3.caption': 'Satu jari, selamanya',
+          'link.label': 'Tengok kisah',
         },
       },
       {
@@ -502,7 +532,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         type: 'quote',
         visible: true,
         text: 'Your day, as it felt — not just as it looked.',
-        ms: { text: 'Hari anda, seperti yang dirasa — bukan sekadar rupanya.' },
+        ms: { text: 'Bukan sekadar cantik dalam gambar. Tapi rasa dia masih sampai.' },
       },
       {
         key: 'cta',
@@ -511,15 +541,15 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         headline: "Let's keep your\n*memories close.*",
         body: 'We would love to hear about your day.',
         link: checkDate,
-        ms: { headline: 'Mari simpan kenangan\n*anda dekat di hati.*', body: 'Kami teruja untuk mendengar tentang hari anda.', 'link.label': 'Semak tarikh anda' },
+        ms: { headline: 'Jom simpan\n*kenangan korang.*', body: 'Kami nak sangat dengar pasal majlis korang.', 'link.label': 'Check tarikh' },
       },
     ],
   },
   contact: {
     title: 'Contact',
-    seoTitle: 'Book your date — Ever After Memoir',
-    seoDescription: 'Check which wedding dates are still available with Ever After Memoir, then book on WhatsApp.',
-    ms: { title: 'Hubungi', seoTitle: 'Tempah tarikh anda — Ever After Memoir', seoDescription: 'Semak tarikh perkahwinan yang masih kosong dengan Ever After Memoir, kemudian tempah melalui WhatsApp.' },
+    seoTitle: 'Book your date — everafter.memoir',
+    seoDescription: 'Check which wedding dates are still available with everafter.memoir, then book on WhatsApp.',
+    ms: { title: 'Hubungi', seoTitle: 'Book tarikh — everafter.memoir', seoDescription: 'Check tarikh yang masih kosong dengan everafter.memoir, pilih slot siang atau malam, lepas tu book terus kat WhatsApp.' },
     sections: [
       {
         key: 'book',
@@ -527,13 +557,13 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         visible: true,
         eyebrow: 'Book your date',
         headline: 'Is your date\n*still free?*',
-        body: 'Pick your wedding date, tell us a little about your day, and we’ll continue on WhatsApp.',
-        note: 'Dates marked “Few slots left” already have another booking. Your date is confirmed once we reply.',
+        body: 'Pick your date and a day or night slot, add a few details, and we’ll continue on WhatsApp.',
+        note: 'Each date has two slots: day and night. Your date is confirmed once we reply.',
         ms: {
-          eyebrow: 'Tempah tarikh anda',
-          headline: 'Tarikh anda\n*masih kosong?*',
-          body: 'Pilih tarikh majlis, ceritakan sedikit tentang hari anda, dan kita sambung di WhatsApp.',
-          note: 'Tarikh bertanda “Slot terhad” sudah ada tempahan lain. Tarikh anda disahkan selepas kami membalas.',
+          eyebrow: 'Booking',
+          headline: 'Tarikh korang\n*masih kosong?*',
+          body: 'Pilih tarikh, pilih slot siang atau malam, isi sikit info. Lepas tu kita sambung borak kat WhatsApp.',
+          note: 'Satu hari ada dua slot: siang dan malam. Tarikh confirm lepas kami reply.',
         },
       },
       {
@@ -546,20 +576,20 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
         successBody: 'We read every inquiry personally and will reply to the email you gave us.',
         privacyNote: 'We only use these details to reply to your inquiry and plan your coverage. We never sell or share them.',
         ms: {
-          headline: 'Lebih suka emel?\n*Hantar pertanyaan terperinci.*',
-          body: 'Ceritakan sedikit tentang hari anda, rancangan anda, dan detik yang paling ingin anda kenang.',
-          successHeadline: 'Terima kasih — *mesej anda sudah kami terima.*',
-          successBody: 'Kami membaca setiap pertanyaan sendiri dan akan membalas ke emel yang anda berikan.',
-          privacyNote: 'Kami hanya menggunakan maklumat ini untuk membalas pertanyaan dan merancang liputan anda. Kami tidak pernah menjual atau berkongsi maklumat anda.',
+          headline: 'Lebih selesa emel?\n*Hantar pertanyaan.*',
+          body: 'Cerita sikit pasal majlis korang, plan korang, dan momen yang korang paling nak simpan.',
+          successHeadline: 'Terima kasih! *Mesej korang dah sampai.*',
+          successBody: 'Kami baca semua pertanyaan sendiri, dan akan reply ke emel yang korang bagi.',
+          privacyNote: 'Info ni kami guna untuk reply dan rancang liputan je. Kami tak jual atau kongsi dengan sesiapa.',
         },
       },
     ],
   },
   privacy: {
     title: 'Privacy',
-    seoTitle: 'Privacy policy — Ever After Memoir',
-    seoDescription: 'How Ever After Memoir handles the personal details you share with us.',
-    ms: { title: 'Privasi', seoTitle: 'Dasar privasi — Ever After Memoir', seoDescription: 'Cara Ever After Memoir mengendalikan maklumat peribadi yang anda kongsi dengan kami.' },
+    seoTitle: 'Privacy policy — everafter.memoir',
+    seoDescription: 'How everafter.memoir handles the personal details you share with us.',
+    ms: { title: 'Privasi', seoTitle: 'Dasar privasi — everafter.memoir', seoDescription: 'Macam mana everafter.memoir jaga info peribadi yang korang kongsi dengan kami.' },
     sections: [
       {
         key: 'policy',
@@ -572,7 +602,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
           '## Why we collect it',
           'We use these details only to reply to you, prepare a quote and plan coverage for your wedding. When you book through WhatsApp, the conversation continues in WhatsApp under its own privacy terms.',
           '## Who can see it',
-          'Your inquiry is stored securely and is only visible to the Ever After Memoir team. We do not sell, rent or share your details with anyone for marketing.',
+          'Your inquiry is stored securely and is only visible to the everafter.memoir team. We do not sell, rent or share your details with anyone for marketing.',
           '## How long we keep it',
           'We keep inquiries for as long as we need them to work with you, and delete closed inquiries we no longer need.',
           '## Your choices',
@@ -588,7 +618,7 @@ export const DEFAULT_PAGES: Record<PageSlug, PageContent> = {
             '## Mengapa kami mengumpulnya',
             'Kami menggunakan maklumat ini hanya untuk membalas anda, menyediakan sebut harga dan merancang liputan majlis anda. Apabila anda menempah melalui WhatsApp, perbualan diteruskan di WhatsApp di bawah terma privasinya sendiri.',
             '## Siapa yang boleh melihatnya',
-            'Pertanyaan anda disimpan dengan selamat dan hanya boleh dilihat oleh pasukan Ever After Memoir. Kami tidak menjual, menyewa atau berkongsi maklumat anda dengan sesiapa untuk tujuan pemasaran.',
+            'Pertanyaan anda disimpan dengan selamat dan hanya boleh dilihat oleh pasukan everafter.memoir. Kami tidak menjual, menyewa atau berkongsi maklumat anda dengan sesiapa untuk tujuan pemasaran.',
             '## Berapa lama kami menyimpannya',
             'Kami menyimpan pertanyaan selama yang diperlukan untuk bekerja dengan anda, dan memadam pertanyaan yang telah selesai apabila tidak diperlukan lagi.',
             '## Pilihan anda',
@@ -633,16 +663,16 @@ export const DEFAULT_STORIES: (StoryContent & { id: string })[] = [
     isSample: true,
     ms: {
       title: 'Sunyi Antara Kita',
-      excerpt: 'Bunga putih, cahaya lembut dan kucupan di tangan.',
+      excerpt: 'Bunga putih, cahaya lembut, dan cium tangan.',
       description:
-        'Pagi yang tenang dan bilik kecil yang penuh bunga putih. Di antara lafaz akad dan sesi bergambar pertama ada satu detik sunyi — tangan di kepalanya, kucupan di tangannya — dan itulah yang kami mahu simpan.',
+        'Pagi yang tenang dalam bilik kecil penuh bunga putih. Antara lafaz akad dan sesi bergambar, ada satu momen senyap. Tangan suami di kepala isteri, ciuman di tangan suami. Itu yang kami nak simpan.',
       'tags.0': 'Akad nikah',
       'tags.1': 'Pelamin',
       'gallery.0.caption': 'Akad',
       'gallery.1.caption': 'Salam.',
-      'gallery.3.caption': 'Genggam lebih lama.',
-      'gallery.4.caption': 'Butiran kecil',
-      'gallery.6.caption': 'Kemudian, gelak tawa.',
+      'gallery.3.caption': 'Pegang lama sikit.',
+      'gallery.4.caption': 'Detail kecil',
+      'gallery.6.caption': 'Lepas tu, gelak.',
     },
   },
   {
@@ -673,16 +703,16 @@ export const DEFAULT_STORIES: (StoryContent & { id: string })[] = [
     isSample: true,
     ms: {
       title: 'Hari Untuk Dikenang',
-      excerpt: 'Dinding ceria, baju putih dan rumah yang penuh dengan orang tersayang.',
-      description: 'Bersiap di rumah, pengapit berbaju biru lembut dan keluarga yang tak henti ketawa. Hari yang riuh, dengan cara yang paling indah.',
+      excerpt: 'Dinding kuning ceria, baju putih, dan rumah penuh orang tersayang.',
+      description: 'Bersiap kat rumah, pengapit berbaju biru lembut, dan family yang tak berhenti gelak. Riuh, tapi riuh yang best.',
       'tags.0': 'Akad nikah',
       'tags.1': 'Di rumah',
       'gallery.0.caption': 'Sebelum',
       'gallery.1.caption': 'Bersiap.',
-      'gallery.2.caption': 'Sedia.',
-      'gallery.3.caption': 'Para pengapit.',
+      'gallery.2.caption': 'Dah siap.',
+      'gallery.3.caption': 'Geng pengapit.',
       'gallery.4.caption': 'Semua orang',
-      'gallery.5.caption': 'Satu keluarga, akhirnya dalam satu gambar.',
+      'gallery.5.caption': 'Satu family, akhirnya dalam satu frame.',
       'gallery.7.caption': 'Sah!',
     },
   },
@@ -713,15 +743,15 @@ export const DEFAULT_STORIES: (StoryContent & { id: string })[] = [
     isSample: true,
     ms: {
       title: 'Merah dan Mekar',
-      excerpt: 'Langsir merah pekat, cahaya kristal dan kek yang dipotong bersama.',
-      description: 'Majlis persandingan berhias merah pekat dan bunga merah jambu. Kami bermula dengan dewan yang masih kosong, kekal di pelamin, dan pulang selepas potongan kek terakhir.',
-      'tags.0': 'Persandingan',
+      excerpt: 'Langsir merah pekat, chandelier kristal, dan kek yang dipotong sama-sama.',
+      description: 'Majlis sanding berhias merah pekat dan bunga pink. Kami mula dari dewan yang masih kosong, lepak lama kat pelamin, dan balik lepas potongan kek terakhir.',
+      'tags.0': 'Sanding',
       'tags.1': 'Pelamin',
       'gallery.0.caption': 'Dewan',
       'gallery.2.caption': 'Sebelum pintu dibuka.',
-      'gallery.4.caption': 'Pasangan',
-      'gallery.5.caption': 'Di pelamin.',
-      'gallery.6.caption': 'Satu potong, bersama.',
+      'gallery.4.caption': 'Pengantin',
+      'gallery.5.caption': 'Atas pelamin.',
+      'gallery.6.caption': 'Satu potong, sama-sama.',
     },
   },
 ]
@@ -744,9 +774,9 @@ export const DEFAULT_SERVICES: (ServiceContent & { id: string })[] = [
     featured: false,
     media: m('getting-ready-poster.jpg'),
     ms: {
-      summary: 'Detik spontan, di sebalik tabir dan suasana majlis anda — sebagai reels, gambar dan story yang sedia dikongsi.',
+      summary: 'Momen spontan, behind the scenes dan suasana majlis, siap jadi reels, gambar dan story yang terus boleh share.',
       description:
-        'Kami rakam hari anda seadanya — saat bersiap, detik di antaranya, orang di sekeliling anda — sebagai kandungan pendek yang boleh dikongsi pada hari itu juga dan disimpan bertahun-tahun.',
+        'Kami rakam hari korang macam mana ia berlaku. Masa bersiap, momen di celah-celah, orang-orang sekeliling. Ada yang korang boleh share hari tu juga, ada yang korang simpan bertahun-tahun.',
     },
   },
   {
@@ -762,9 +792,9 @@ export const DEFAULT_SERVICES: (ServiceContent & { id: string })[] = [
     featured: false,
     media: m('just-married-poster.jpg'),
     ms: {
-      name: 'Video Highlight Perkahwinan',
-      summary: 'Penceritaan ringkas yang menghimpunkan emosi, tenaga dan butiran yang tidak dilupakan pada hari itu.',
-      description: 'Video kecil daripada detik-detik paling bermakna, supaya anda dapat merasai hari anda sekali lagi.',
+      name: 'Video Highlight',
+      summary: 'Video pendek yang himpunkan emosi, keriuhan dan detail yang korang tak nak lupa.',
+      description: 'Video kecil dari momen-momen paling bermakna, supaya korang boleh rasa hari tu sekali lagi.',
     },
   },
   {
@@ -780,20 +810,20 @@ export const DEFAULT_SERVICES: (ServiceContent & { id: string })[] = [
     featured: false,
     media: m('hall-decor-poster.jpg'),
     ms: {
-      name: 'Liputan Mengikut Citarasa',
-      summary: 'Liputan kandungan yang disesuaikan dengan keutamaan dan rancangan majlis setiap pasangan.',
-      description: 'Beritahu kami apa yang penting bagi anda dan kami akan bentuk liputan di sekelilingnya — dari majlis kecil hingga sambutan besar.',
+      name: 'Liputan Ikut Citarasa',
+      summary: 'Liputan yang disusun ikut apa yang paling penting untuk korang berdua.',
+      description: 'Bagitahu apa yang korang nak, kami susun liputan ikut tu. Majlis kecil pun boleh, majlis besar pun boleh.',
     },
   },
 ]
 
 export const DEFAULT_SOCIAL: (SocialItemContent & { id: string })[] = [
-  { id: uuid(301), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-1.jpg'), caption: 'On TikTok', ms: { caption: 'Di TikTok' } },
-  { id: uuid(302), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-2.jpg'), caption: 'On Instagram', ms: { caption: 'Di Instagram' } },
-  { id: uuid(303), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-3.jpg'), caption: 'On TikTok', ms: { caption: 'Di TikTok' } },
-  { id: uuid(304), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-4.jpg'), caption: 'On Instagram', ms: { caption: 'Di Instagram' } },
-  { id: uuid(305), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-5.jpg'), caption: 'On TikTok', ms: { caption: 'Di TikTok' } },
-  { id: uuid(306), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-6.jpg'), caption: 'On Instagram', ms: { caption: 'Di Instagram' } },
+  { id: uuid(301), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-1.jpg'), caption: 'On TikTok', ms: { caption: 'Kat TikTok' } },
+  { id: uuid(302), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-2.jpg'), caption: 'On Instagram', ms: { caption: 'Kat Instagram' } },
+  { id: uuid(303), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-3.jpg'), caption: 'On TikTok', ms: { caption: 'Kat TikTok' } },
+  { id: uuid(304), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-4.jpg'), caption: 'On Instagram', ms: { caption: 'Kat Instagram' } },
+  { id: uuid(305), platform: 'tiktok', url: 'https://www.tiktok.com/@everafter.memoir/', preview: m('social-5.jpg'), caption: 'On TikTok', ms: { caption: 'Kat TikTok' } },
+  { id: uuid(306), platform: 'instagram', url: 'https://www.instagram.com/everafter.memoir/', preview: m('social-6.jpg'), caption: 'On Instagram', ms: { caption: 'Kat Instagram' } },
 ]
 
 export const DEFAULT_SETTINGS_ID = uuid(901)

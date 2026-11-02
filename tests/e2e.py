@@ -301,28 +301,38 @@ with sync_playwright() as p:
         day.click()
         cal.get_by_role('button', name='Continue on WhatsApp').click()
         expect(cal.get_by_text('Please tell us your name')).to_be_visible()
+        expect(cal.get_by_text('Roughly what time should we cover?')).to_be_visible()
+        cal.get_by_role('radio', name=re.compile('^Night')).click()
         page.locator('#bk-fullName').fill(booker)
-        page.locator('#bk-celebrationType').select_option(index=1)
-        page.locator('#bk-serviceInterest').select_option(index=1)
         page.locator('#bk-location').fill('Kuantan')
+        page.locator('#bk-coverTime').fill('8pm - 11pm')
+        page.locator('#bk-instagram').fill('@e2e.couple')
         cal.locator('input[name=consent]').check()
         page.wait_for_timeout(2700)
         cal.get_by_role('button', name='Continue on WhatsApp').click()
         page.wait_for_url('https://wa.me/**', timeout=15000)
         assert wa and 'text=' in wa[0], 'no WhatsApp redirect'
+        from urllib.parse import unquote
+        msg = unquote(wa[0].split('text=', 1)[1])
+        for bit in ('Slot: Night', 'Location: Kuantan', 'Cover time: 8pm - 11pm', 'Instagram: @e2e.couple', booker):
+            assert bit in msg, f'WhatsApp message missing {bit!r}: {msg}'
         ctx.close()
-        # Owner marks it booked; the public calendar then shows that date as booked
+        # Owner marks it booked: only the night slot closes; the day slot stays open
         admin.goto(f'{BASE}/admin/inquiries')
         admin.get_by_role('link', name=re.compile(booker)).click()
+        expect(admin.get_by_text('8pm - 11pm')).to_be_visible()
         admin.locator('#inq-status').select_option('booked')
-        expect(admin.get_by_text(re.compile('closed on your booking calendar'))).to_be_visible()
+        expect(admin.get_by_text(re.compile('night slot .* is now taken'))).to_be_visible()
         ctx2, pub = new_page(browser, viewport={'width': 1280, 'height': 900})
         pub.goto(f'{BASE}/contact?date={picked}#book')
         btn = pub.locator(f'[data-day="{picked}"]')
-        expect(btn).to_be_disabled()
-        assert 'booked' in (btn.get_attribute('aria-label') or '').lower()
+        expect(btn).to_be_enabled()
+        assert 'one slot left' in (btn.get_attribute('aria-label') or '').lower()
+        btn.click()
+        expect(pub.get_by_role('radio', name=re.compile('^Night'))).to_be_disabled()
+        expect(pub.get_by_role('radio', name=re.compile('^Day'))).to_have_attribute('aria-checked', 'true')
         ctx2.close()
-        # Re-open the date from the admin calendar so reruns stay clean
+        # A second booking of the other slot closes the whole date
         admin.goto(f'{BASE}/admin/availability')
         target = admin.locator(f'[data-admin-day="{picked}"]')
         for _ in range(24):
@@ -330,9 +340,25 @@ with sync_playwright() as p:
                 break
             admin.get_by_role('button', name='Next months').click()
         target.click()
-        admin.get_by_role('button', name='Available', exact=True).click()
+        admin.get_by_role('button', name='Full day', exact=True).click()
+        expect(admin.get_by_text(re.compile('marked'))).to_be_visible()
+        ctx3, pub = new_page(browser, viewport={'width': 1280, 'height': 900})
+        pub.goto(f'{BASE}/contact?date={picked}#book')
+        btn = pub.locator(f'[data-day="{picked}"]')
+        expect(btn).to_be_disabled()
+        assert 'booked' in (btn.get_attribute('aria-label') or '').lower()
+        ctx3.close()
+        # Re-open the date so reruns stay clean
+        admin.goto(f'{BASE}/admin/availability')
+        target = admin.locator(f'[data-admin-day="{picked}"]')
+        for _ in range(24):
+            if target.count():
+                break
+            admin.get_by_role('button', name='Next months').click()
+        target.click()
+        admin.get_by_role('button', name='Available (clear)').click()
         expect(admin.get_by_text(re.compile('marked available'))).to_be_visible()
-    check('14b Booking calendar sends the couple to WhatsApp; booked dates close', t14b)
+    check('14b Booking: slot + details go to WhatsApp; slots and full days close', t14b)
 
     def t15():
         admin.goto(f'{BASE}/admin/inquiries')

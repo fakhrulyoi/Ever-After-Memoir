@@ -1,8 +1,8 @@
 'use client'
 import { AnimatePresence, m } from 'motion/react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { bookingRange, bookingSchema, dayState, isBookable, type DayState } from '@/lib/booking'
-import type { AvailabilityStatus, BookingSection } from '@/lib/content/types'
+import { bookingRange, bookingSchema, dayState, isBookable, openSlots, type DayState } from '@/lib/booking'
+import type { AvailabilityDay, BookingSection, Slot } from '@/lib/content/types'
 import type { SiteData } from '@/lib/data/site'
 import { addDays, addMonths, daysInMonth, formatLong, formatMonth, monthStart, todayISO, weekdayMon } from '@/lib/dates'
 import { WEEKDAYS, tErr, type Lang, type UIKey } from '@/lib/i18n'
@@ -116,7 +116,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     () => bookingRange({ leadDays: settings.bookingLeadDays, monthsAhead: settings.bookingMonthsAhead }, today),
     [settings.bookingLeadDays, settings.bookingMonthsAhead, today],
   )
-  const map = useMemo(() => new Map<string, AvailabilityStatus>(data.availability.map((a) => [a.day, a.status])), [data.availability])
+  const map = useMemo(() => new Map<string, AvailabilityDay>(data.availability.map((a) => [a.day, a])), [data.availability])
   const states = (d: string) => dayState(d, map, range)
 
   const firstMonth = monthStart(range.first)
@@ -124,6 +124,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
   const [view, setView] = useState(firstMonth)
   const [dir, setDir] = useState(1)
   const [selected, setSelected] = useState<string | null>(null)
+  const [slot, setSlot] = useState<Slot | null>(null)
   const [focusDay, setFocusDay] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
   const [errors, setErrors] = useState<Errors>({})
@@ -174,6 +175,8 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
 
   const pick = (d: string) => {
     setSelected(d)
+    const open = openSlots(map.get(d))
+    setSlot(open.length === 1 ? open[0] : null)
     setStatus('idle')
     setMessage('')
     setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80)
@@ -194,7 +197,6 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     focusAfterRender.current = target
   }
 
-  const services = [...data.services.filter((x) => x.content.kind === 'service').map((x) => x.content.name), t('form.notSure')]
   const needsEmail = !settings.whatsappNumber
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -208,12 +210,11 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     const fd = new FormData(e.currentTarget)
     const payload = {
       date: selected,
+      slot: slot ?? '',
       fullName: String(fd.get('fullName') ?? ''),
-      partnerName: String(fd.get('partnerName') ?? ''),
-      celebrationType: String(fd.get('celebrationType') ?? ''),
-      serviceInterest: String(fd.get('serviceInterest') ?? ''),
       location: String(fd.get('location') ?? ''),
-      notes: String(fd.get('notes') ?? ''),
+      coverTime: String(fd.get('coverTime') ?? ''),
+      instagram: String(fd.get('instagram') ?? ''),
       email: String(fd.get('email') ?? ''),
       consent: fd.get('consent') === 'on',
       website: String(fd.get('website') ?? ''),
@@ -225,7 +226,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     if (needsEmail && !payload.email) errs.email = 'err.emailNeeded'
     if (Object.keys(errs).length) {
       setErrors(errs)
-      e.currentTarget.querySelector<HTMLElement>(`[name="${Object.keys(errs)[0]}"]`)?.focus()
+      e.currentTarget.querySelector<HTMLElement>(`[name="${Object.keys(errs)[0]}"], [data-field="${Object.keys(errs)[0]}"]`)?.focus()
       return
     }
     setErrors({})
@@ -258,6 +259,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     errors[name] ? <p id={`bk-${name}-error`} className="mt-1.5 text-[0.875rem] text-danger" role="alert">{tErr(lang, errors[name])}</p> : null
 
   const selState = selected ? states(selected) : null
+  const selOpen = selected ? openSlots(map.get(selected)) : []
 
   const legend = (
     <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[0.875rem] lg:flex-col lg:gap-3 lg:text-[0.9375rem]" aria-label={t('book.key')}>
@@ -355,35 +357,52 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
                           </div>
                         ) : (
                           <form onSubmit={submit} noValidate className="relative mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+                            <fieldset className="sm:col-span-2" aria-describedby={errors.slot ? 'bk-slot-error' : undefined}>
+                              <legend className="mb-3 block text-[0.875rem] font-medium text-ink-soft">{t('slot.choose')} <span className="text-olive" aria-hidden>*</span></legend>
+                              <div className="grid grid-cols-2 gap-3" role="radiogroup">
+                                {(['day', 'night'] as const).map((k, i) => {
+                                  const open = selOpen.includes(k)
+                                  const on = slot === k
+                                  return (
+                                    <button
+                                      key={k}
+                                      type="button"
+                                      role="radio"
+                                      aria-checked={on}
+                                      disabled={!open}
+                                      data-field={i === 0 ? 'slot' : undefined}
+                                      onClick={() => setSlot(k)}
+                                      className={`flex min-h-16 flex-col items-start justify-center rounded-[2px] border px-4 py-3 text-left transition-colors ${
+                                        on ? 'border-olive-deep bg-olive-deep text-ivory' : open ? 'border-charcoal/20 bg-ivory hover:border-olive-deep' : 'cursor-not-allowed border-charcoal/10 text-charcoal/35'
+                                      }`}
+                                    >
+                                      <span className="display text-[1.6rem] leading-none">{t(k === 'day' ? 'slot.day' : 'slot.night')}</span>
+                                      <span className={`mt-1 text-[0.8125rem] ${on ? 'text-ivory/80' : 'text-ink-soft'}`}>{open ? t(k === 'day' ? 'slot.dayHint' : 'slot.nightHint') : t('slot.taken')}</span>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                              <Err name="slot" />
+                            </fieldset>
                             <div>
                               <label htmlFor="bk-fullName" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.name')} <span className="text-olive" aria-hidden>*</span></label>
                               <input {...aria('fullName')} autoComplete="name" className={inputCls} />
                               <Err name="fullName" />
                             </div>
                             <div>
-                              <label htmlFor="bk-partnerName" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.partner')} <span className="font-normal">{t('form.optional')}</span></label>
-                              <input {...aria('partnerName')} className={inputCls} />
-                            </div>
-                            <div>
-                              <label htmlFor="bk-celebrationType" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.type')} <span className="text-olive" aria-hidden>*</span></label>
-                              <select {...aria('celebrationType')} defaultValue="" className={`${inputCls} appearance-none`}>
-                                <option value="" disabled>{t('form.choose')}</option>
-                                {settings.celebrationTypes.map((c) => <option key={c}>{c}</option>)}
-                              </select>
-                              <Err name="celebrationType" />
-                            </div>
-                            <div>
-                              <label htmlFor="bk-serviceInterest" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.service')} <span className="text-olive" aria-hidden>*</span></label>
-                              <select {...aria('serviceInterest')} defaultValue="" className={`${inputCls} appearance-none`}>
-                                <option value="" disabled>{t('form.choose')}</option>
-                                {services.map((c) => <option key={c}>{c}</option>)}
-                              </select>
-                              <Err name="serviceInterest" />
-                            </div>
-                            <div className="sm:col-span-2">
                               <label htmlFor="bk-location" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.location')} <span className="text-olive" aria-hidden>*</span></label>
                               <input {...aria('location')} className={inputCls} placeholder={t('book.locationHint')} />
                               <Err name="location" />
+                            </div>
+                            <div>
+                              <label htmlFor="bk-coverTime" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.coverTime')} <span className="text-olive" aria-hidden>*</span></label>
+                              <input {...aria('coverTime')} className={inputCls} placeholder={t('book.coverTimeHint')} />
+                              <Err name="coverTime" />
+                            </div>
+                            <div>
+                              <label htmlFor="bk-instagram" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.instagram')} <span className="font-normal">{t('form.optional')}</span></label>
+                              <input {...aria('instagram')} className={inputCls} placeholder={t('book.instagramHint')} autoCapitalize="none" autoCorrect="off" />
+                              <Err name="instagram" />
                             </div>
                             {needsEmail && (
                               <div className="sm:col-span-2">
@@ -392,11 +411,6 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
                                 <Err name="email" />
                               </div>
                             )}
-                            <div className="sm:col-span-2">
-                              <label htmlFor="bk-notes" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.notes')} <span className="font-normal">{t('form.optional')}</span></label>
-                              <textarea {...aria('notes')} rows={2} className={`${inputCls} resize-y`} />
-                              <Err name="notes" />
-                            </div>
                             <div className="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden>
                               <label htmlFor="bk-website">{t('form.honeypot')}</label>
                               <input id="bk-website" name="website" tabIndex={-1} autoComplete="off" />
@@ -404,7 +418,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
                             <div className="sm:col-span-2">
                               <label className="flex cursor-pointer items-start gap-3 text-[0.9375rem] text-ink-soft">
                                 <input type="checkbox" name="consent" className="mt-0.5 h-5 w-5 shrink-0 accent-olive-deep" aria-invalid={errors.consent ? true : undefined} aria-describedby={errors.consent ? 'bk-consent-error' : undefined} />
-                                <span>{t('book.consent')} <SiteLink href="/privacy" className="underline underline-offset-4">{t('form.privacy')}</SiteLink>.</span>
+                                <span>{t('book.consent', { site: settings.siteTitle })} <SiteLink href="/privacy" className="underline underline-offset-4">{t('form.privacy')}</SiteLink>.</span>
                               </label>
                               <Err name="consent" />
                             </div>

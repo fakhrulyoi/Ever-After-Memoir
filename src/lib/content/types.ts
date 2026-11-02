@@ -351,9 +351,15 @@ export interface SettingsContent {
 
 export type AvailabilityStatus = 'booked' | 'limited' | 'unavailable'
 
+/** A day has two slots: day (siang) and night (malam). */
+export type Slot = 'day' | 'night'
+
 export interface AvailabilityDay {
   day: string
+  /** booked = both slots taken; limited = one slot taken (see `slot`); unavailable = closed */
   status: AvailabilityStatus
+  /** For `limited`: the slot that is already taken */
+  slot?: Slot | null
 }
 
 export type ContentTable = 'pages' | 'stories' | 'services' | 'testimonials' | 'social_items' | 'site_settings'

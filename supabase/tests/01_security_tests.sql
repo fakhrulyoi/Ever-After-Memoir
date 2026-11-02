@@ -233,6 +233,19 @@ do $$ begin
   raise notice 'PASS 12b non-admin cannot change availability';
 end $$;
 
+-- 12c. Day/night slots: public sees which slot is taken; bad slot values are refused
+do $$ begin
+  perform pg_temp.as_role('authenticated', '11111111-1111-4111-8111-111111111111');
+  insert into public.availability (day, status, slot) values (current_date + 31, 'limited', 'night');
+  perform pg_temp.expect_error($q$insert into public.availability (day, status, slot) values (current_date + 32, 'limited', 'evening')$q$, 'availability_slot_check');
+end $$;
+do $$ declare s text; begin
+  perform pg_temp.as_role('anon', null);
+  select slot into s from public.availability where day = current_date + 31;
+  if s is distinct from 'night' then raise exception 'T12c anon cannot see the taken slot'; end if;
+  raise notice 'PASS 12c slots readable by visitors and validated';
+end $$;
+
 -- 13. Booking inquiries may come without an email
 do $$ begin
   perform pg_temp.as_role('service_role', null);

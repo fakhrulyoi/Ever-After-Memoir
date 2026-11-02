@@ -207,14 +207,12 @@ export const listSocial = cache((source: Source = 'published'): Promise<Publishe
 export const getAvailability = cache((source: Source = 'published'): Promise<AvailabilityDay[]> =>
   load('availability', () => [], async () => {
     const sb = await client(source)
-    const { data, error } = await sb
-      .from('availability')
-      .select('day, status')
-      .gte('day', todayISO())
-      .order('day', { ascending: true })
-      .limit(2000)
+    const query = (cols: string) => sb.from('availability').select(cols).gte('day', todayISO()).order('day', { ascending: true }).limit(2000)
+    let { data, error } = await query('day, status, slot')
+    // Databases without the day/night slots yet (before 0005_slots.sql)
+    if (error && /slot/.test(error.message)) ({ data, error } = await query('day, status'))
     if (error) throw new Error(`Could not load availability: ${error.message}`)
-    return (data ?? []) as AvailabilityDay[]
+    return (data ?? []) as unknown as AvailabilityDay[]
   }),
 )
 

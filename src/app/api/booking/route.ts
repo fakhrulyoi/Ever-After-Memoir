@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { bookingRange, bookingSchema, dayState, fillMessage, isBookable } from '@/lib/booking'
+import { bookingRange, bookingSchema, dayState, fillMessage, isBookable, openSlots } from '@/lib/booking'
 import { DEFAULT_SETTINGS } from '@/lib/content/defaults'
 import { normalize } from '@/lib/content/schemas'
-import type { AvailabilityStatus } from '@/lib/content/types'
+import type { AvailabilityDay } from '@/lib/content/types'
 import { formatLong } from '@/lib/dates'
 import { localize, t, type Lang } from '@/lib/i18n'
 import { SITE_URL } from '@/lib/env'
@@ -42,15 +42,19 @@ export async function POST(req: NextRequest) {
   // Read the live settings and the date's status fresh, never from cache
   const [{ data: settingsRow }, { data: dayRow }] = await Promise.all([
     sb.from('site_settings').select('published').eq('status', 'published').limit(1).maybeSingle(),
-    sb.from('availability').select('status').eq('day', d.date).maybeSingle(),
+    sb.from('availability').select('*').eq('day', d.date).maybeSingle(),
   ])
   const settings = localize(normalize('site_settings', settingsRow?.published, DEFAULT_SETTINGS), lang)
   if (!settings.bookingEnabled) return json({ ok: false, error: t(lang, 'api.paused') }, 409)
 
-  const map = new Map<string, AvailabilityStatus>(dayRow ? [[d.date, dayRow.status as AvailabilityStatus]] : [])
+  const row = dayRow ? ({ day: d.date, status: dayRow.status, slot: dayRow.slot ?? null } as AvailabilityDay) : undefined
+  const map = new Map<string, AvailabilityDay>(row ? [[d.date, row]] : [])
   const state = dayState(d.date, map, bookingRange({ leadDays: settings.bookingLeadDays, monthsAhead: settings.bookingMonthsAhead }))
   if (!isBookable(state)) {
     return json({ ok: false, error: t(lang, state === 'outside' ? 'api.outside' : 'api.taken') }, 409)
+  }
+  if (!openSlots(row).includes(d.slot)) {
+    return json({ ok: false, error: t(lang, 'api.slotTaken'), fieldErrors: { slot: 'api.slotTaken' } }, 409)
   }
 
   const wa = settings.whatsappNumber
@@ -63,45 +67,50 @@ export async function POST(req: NextRequest) {
   if (limited === 'error') return json({ ok: false, error: t(lang, 'api.retry') }, 500)
   if (limited) return json({ ok: false, error: t(lang, 'api.limit') }, 429)
 
-  const { data: row, error } = await sb
+  const slotLabel = t(lang, d.slot === 'day' ? 'slot.day' : 'slot.night')
+  const base = {
+    source: 'booking',
+    full_name: d.fullName,
+    email: d.email.toLowerCase(),
+    wedding_date: d.date,
+    location: d.location,
+    consent: d.consent,
+    ip_hash: hash,
+  }
+  let { data: inserted, error } = await sb
     .from('inquiries')
-    .insert({
-      source: 'booking',
-      full_name: d.fullName,
-      partner_name: d.partnerName,
-      email: d.email.toLowerCase(),
-      wedding_date: d.date,
-      location: d.location,
-      celebration_type: d.celebrationType,
-      service_interest: d.serviceInterest,
-      notes: d.notes,
-      consent: d.consent,
-      ip_hash: hash,
-    })
+    .insert({ ...base, slot: d.slot, cover_time: d.coverTime, instagram: d.instagram })
     .select('id')
     .single()
-  if (error || !row) {
+  // Databases without the slot columns yet (before 0005_slots.sql): keep the details in the notes
+  if (error && /slot|cover_time|instagram/.test(error.message)) {
+    ;({ data: inserted, error } = await sb
+      .from('inquiries')
+      .insert({ ...base, notes: [`Slot: ${slotLabel}`, `Cover time: ${d.coverTime}`, d.instagram && `Instagram: ${d.instagram}`].filter(Boolean).join('\n') })
+      .select('id')
+      .single())
+  }
+  if (error || !inserted) {
     console.error('booking insert failed', error?.message)
     return json({ ok: false, error: t(lang, 'api.retry') }, 500)
   }
   await recordHit(sb, hash)
 
-  const ref = row.id.slice(0, 8).toUpperCase()
+  const ref = inserted.id.slice(0, 8).toUpperCase()
   const fallback = lang === 'ms' ? DEFAULT_SETTINGS.ms?.bookingMessage : DEFAULT_SETTINGS.bookingMessage
   const message = fillMessage(settings.bookingMessage || fallback || DEFAULT_SETTINGS.bookingMessage, {
     date: formatLong(d.date, lang),
     date_en: formatLong(d.date),
     name: d.fullName,
-    partner: d.partnerName,
-    type: d.celebrationType,
-    service: d.serviceInterest,
+    slot: slotLabel,
     location: d.location,
-    notes: d.notes,
+    time: d.coverTime,
+    instagram: d.instagram,
     ref,
   })
   await notifyOwner(
-    { Date: formatLong(d.date), Name: d.fullName, Partner: d.partnerName, Email: d.email, Location: d.location, Celebration: d.celebrationType, Service: d.serviceInterest, Notes: d.notes, Reference: ref },
-    { id: row.id, subject: `New booking request — ${formatLong(d.date)} (${d.fullName})`, replyTo: d.email || undefined },
+    { Date: formatLong(d.date), Slot: d.slot === 'day' ? 'Day' : 'Night', Name: d.fullName, Location: d.location, 'Cover time': d.coverTime, Instagram: d.instagram, Email: d.email, Reference: ref },
+    { id: inserted.id, subject: `New booking — ${formatLong(d.date)}, ${d.slot === 'day' ? 'day' : 'night'} (${d.fullName})`, replyTo: d.email || undefined },
   ).catch((e) => console.error('notification email failed', e))
   return json({ ok: true, ref, whatsappUrl: wa ? waLink(wa, message) : null })
 }

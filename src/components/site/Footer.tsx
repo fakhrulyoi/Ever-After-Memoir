@@ -6,6 +6,10 @@ export function Footer() {
   const { settings } = useSite()
   const t = useT()
   const year = new Date().getFullYear()
+  const name = settings.siteTitle || 'everafter.memoir'
+  const cut = name.includes('.') ? name.lastIndexOf('.') + 1 : name.lastIndexOf(' ') + 1
+  const head = cut > 0 ? name.slice(0, cut) : name
+  const tail = cut > 0 ? name.slice(cut) : ''
   return (
     <footer className="on-dark relative overflow-hidden bg-olive-deep text-ivory">
       <div className="shell grid grid-cols-2 gap-x-6 gap-y-10 pb-10 pt-20 md:grid-cols-12 md:gap-14 md:pt-32">
@@ -53,7 +57,8 @@ export function Footer() {
           className="text-ivory/[0.07]"
           style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 150, letterSpacing: '-2px' }}
         >
-          Ever After <tspan fontStyle="italic">Memoir</tspan>
+          {head}
+          {tail && <tspan fontStyle="italic">{tail}</tspan>}
         </text>
       </svg>
       <div className="shell flex flex-col gap-1 border-t border-ivory/10 py-5 text-[0.8125rem] text-taupe sm:flex-row sm:items-center sm:justify-between">

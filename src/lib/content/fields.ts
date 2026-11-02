@@ -394,7 +394,7 @@ export const SETTINGS_FIELDS: FieldDef[] = [
     key: 'bookingMessage',
     label: 'WhatsApp message',
     rows: 9,
-    help: 'Filled in for the couple. Use {date} {name} {partner} {type} {service} {location} {notes} {ref}. Lines with an empty value are left out. Switch to Bahasa Melayu above to edit the Malay message, used for visitors reading in Malay.',
+    help: 'Filled in for the couple. Use {name} {date} {slot} {location} {time} {instagram} {ref}. Lines with an empty value are left out. Switch to Bahasa Melayu above to edit the Malay message, used for visitors reading in Malay.',
   },
   { kind: 'heading', label: 'Inquiry form' },
   { kind: 'list', key: 'celebrationTypes', label: 'Types of celebration', itemLabel: 'type', max: 12 },

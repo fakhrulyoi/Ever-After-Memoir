@@ -1,4 +1,4 @@
-# Ever After Memoir — Website + Admin CMS
+# everafter.memoir — Website + Admin CMS
 
 Website portfolio wedding content creator (tema olive green) dengan admin dashboard tanpa coding.
 
@@ -17,8 +17,9 @@ Website portfolio wedding content creator (tema olive green) dengan admin dashbo
 3. Buat query baru. Buka `supabase/migrations/0002_seed.sql`, salin, tampal dan **Run**. Ini isi kandungan permulaan (teks dari brief + gambar anda).
 4. Buat query baru lagi. Buka `supabase/migrations/0003_booking.sql`, salin, tampal dan **Run**. Ini untuk kalendar booking.
 5. Akhir sekali `supabase/migrations/0004_refresh.sql` → **Run**. Ini masukkan video sebenar, teks Bahasa Melayu dan susunan homepage baru. Kandungan yang awak **dah edit dan simpan** di admin tidak disentuh. **Ikut turutan 0001 → 0002 → 0003 → 0004.**
+6. Kemudian `supabase/migrations/0005_slots.sql` → **Run**. Ini tambah slot siang/malam, borang booking baru (nama, tempat, cover time, IG pengantin), nama `everafter.memoir` dan teks BM yang baru.
 
-> Dah pernah jalankan 0001–0003? Cukup jalankan **0004** sahaja.
+> Dah pernah jalankan 0001–0004? Cukup jalankan **0005** sahaja.
 6. **Authentication → Sign In / Providers**:
    - Pastikan **Email** dihidupkan.
    - **Matikan “Allow new users to sign up”**. Tiada sesiapa boleh daftar sendiri.
@@ -113,7 +114,9 @@ Tips teks: dalam tajuk, `*perkataan*` jadi *italic* dan Enter jadi baris baru. D
 
 **Booking & Availability** (kalendar di `/contact#book`, butang “Check your date” di seluruh website):
 - Pasangan pilih tarikh di kalendar → isi nama, jenis majlis, servis, lokasi → tekan *Continue on WhatsApp*. Inquiry disimpan dahulu, kemudian WhatsApp dibuka dengan mesej siap ditulis (ada nombor rujukan).
-- **Availability** di admin: klik tarikh (Shift+klik untuk julat) → pilih *Booked*, *Few slots left*, *Not available* atau *Available*. Kalendar website berubah serta-merta, tanpa publish. Tarikh yang tidak ditanda dikira *available*.
+- **Availability** di admin: klik tarikh (Shift+klik untuk julat) → pilih *Day taken*, *Night taken*, *Full day*, *Not available* atau *Available (clear)*. Satu hari ada dua slot (siang & malam); kalau satu slot dah diambil, pelanggan hanya boleh pilih slot yang lagi satu. Kalendar website berubah serta-merta, tanpa publish.
+- Bila inquiry booking ditukar ke **Booked** di Inquiries, slot itu ditutup secara automatik; kalau kedua-dua slot dah diambil, tarikh jadi *Penuh*.
+- **Nama brand** (wordmark di atas & footer) ditukar di **Admin → Settings & SEO → Website name**.
 - Bila inquiry ditukar ke **Booked**, tarikhnya ditutup di kalendar secara automatik.
 - **Settings & SEO → Booking**: hidup/matikan booking, berapa hari notis minimum, berapa bulan ke depan, dan teks mesej WhatsApp. Placeholder: `{date}` (Bahasa Melayu), `{date_en}`, `{name}`, `{partner}`, `{type}`, `{service}`, `{location}`, `{notes}`, `{ref}`. Baris yang kosong dibuang sendiri.
 - Nota peribadi tarikh hanya admin nampak; awam cuma nampak status.
@@ -174,6 +177,9 @@ Untuk emel reset password yang lebih dipercayai, set **Supabase → Authenticati
 |---|---|
 | Ujian keselamatan database (`supabase/tests`) — RLS, publish, media, inquiry, availability | ✅ 18/18 |
 | Migrasi 0004 pada database lama — kandungan yang diedit kekal, yang belum diedit dikemas kini | ✅ |
+| Slot siang/malam: satu slot diambil → hanya slot lain boleh dipilih; dua-dua diambil → penuh | ✅ |
+| Mesej WhatsApp mengandungi nama, tarikh, slot, tempat, cover time, IG | ✅ |
+| Migrasi 0005 kekalkan nombor WhatsApp & tetapan yang diedit | ✅ |
 | Ujian penerimaan end-to-end (`tests/e2e.py`) — 22 aliran dalam brief + booking → WhatsApp + edit BM, EN & BM, pada stack Supabase tempatan (GoTrue + PostgREST + Postgres 16) | ✅ 24/24 |
 | Lighthouse (mobile) — Accessibility / Best Practices / SEO | 100 / 100 / 100 |
 | Panjang homepage di iPhone | ±10 skrin (dulu ±17) |
@@ -221,4 +227,4 @@ tests/e2e.py           ujian penerimaan end-to-end
 public/brand/          gambar & video Ever After Memoir
 ```
 
-Untuk tukar kandungan permulaan, edit `src/lib/content/defaults.ts`, kemudian jalankan `npm run seed:generate` (menjana 0002 dan 0004).
+Untuk tukar kandungan permulaan, edit `src/lib/content/defaults.ts`, kemudian jalankan `npm run seed:generate` (menjana 0002, 0004 dan 0005).

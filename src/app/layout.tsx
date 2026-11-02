@@ -11,7 +11,7 @@ import { SITE_URL } from '@/lib/env'
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings().catch(() => null)
-  const title = settings?.siteTitle ?? 'Ever After Memoir'
+  const title = settings?.siteTitle ?? 'everafter.memoir'
   return {
     metadataBase: new URL(SITE_URL),
     title: { default: title, template: `%s — ${title}` },

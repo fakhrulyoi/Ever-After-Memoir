@@ -28,7 +28,7 @@ export function StatusBadge({ status }: { status: InquiryStatus }) {
 }
 
 function csv(rows: InquiryRow[]) {
-  const cols: (keyof InquiryRow)[] = ['created_at', 'status', 'full_name', 'partner_name', 'email', 'whatsapp', 'wedding_date', 'location', 'celebration_type', 'service_interest', 'budget', 'notes']
+  const cols: (keyof InquiryRow)[] = ['created_at', 'status', 'full_name', 'partner_name', 'email', 'whatsapp', 'wedding_date', 'slot', 'cover_time', 'instagram', 'location', 'celebration_type', 'service_interest', 'budget', 'notes']
   const esc = (v: unknown) => {
     const s = String(v ?? '')
     // Prevent spreadsheet formula injection
@@ -138,8 +138,8 @@ export function InquiryInbox({ rows, retentionMonths }: { rows: InquiryRow[]; re
                   </Link>
                   <span className="text-xs text-ink-soft">{r.source === 'booking' ? 'Booking calendar → WhatsApp' : r.email}</span>
                 </td>
-                <td className="py-3 pr-3">{r.wedding_date ? formatDate(r.wedding_date) : '—'}<br /><span className="text-xs text-ink-soft">{r.location}</span></td>
-                <td className="py-3 pr-3">{r.service_interest}<br /><span className="text-xs text-ink-soft">{r.celebration_type}</span></td>
+                <td className="py-3 pr-3">{r.wedding_date ? formatDate(r.wedding_date) : '—'}{r.slot ? <span className="ml-1.5 rounded-full bg-sage/40 px-2 py-0.5 text-xs">{r.slot === 'day' ? 'Day' : 'Night'}</span> : null}<br /><span className="text-xs text-ink-soft">{r.location}</span></td>
+                <td className="py-3 pr-3">{r.source === 'booking' ? r.cover_time || '—' : r.service_interest}<br /><span className="text-xs text-ink-soft">{r.source === 'booking' ? r.instagram : r.celebration_type}</span></td>
                 <td className="py-3 pr-3"><StatusBadge status={r.status} /></td>
                 <td className="py-3 text-xs text-ink-soft">{formatWhen(r.created_at)}</td>
               </tr>
@@ -181,7 +181,9 @@ export function InquiryDetail({ inquiry, notes: initialNotes }: { inquiry: Inqui
     }
     toast.success(
       res.dateMarked
-        ? `Marked as booked — ${formatDate(res.dateMarked)} is now closed on your booking calendar`
+        ? res.slotMarked
+          ? `Marked as booked — the ${res.slotMarked} slot on ${formatDate(res.dateMarked)} is now taken on your calendar`
+          : `Marked as booked — ${formatDate(res.dateMarked)} is now closed on your booking calendar`
         : `Marked as ${STATUS[s].label.toLowerCase()}`,
     )
     router.refresh()
@@ -208,8 +210,8 @@ export function InquiryDetail({ inquiry, notes: initialNotes }: { inquiry: Inqui
     router.refresh()
   }
 
-  const subject = `Your wedding on ${inquiry.wedding_date ? formatDate(inquiry.wedding_date) : 'your big day'} — Ever After Memoir`
-  const wa = waLink(inquiry.whatsapp, `Hi ${inquiry.full_name}, thank you for your inquiry with Ever After Memoir!`)
+  const subject = `Your wedding on ${inquiry.wedding_date ? formatDate(inquiry.wedding_date) : 'your big day'} — everafter.memoir`
+  const wa = waLink(inquiry.whatsapp, `Hi ${inquiry.full_name}, thank you for your inquiry with everafter.memoir!`)
   const rows: [string, string][] = [
     ['Came from', inquiry.source === 'booking' ? 'Booking calendar (continued on WhatsApp)' : 'Inquiry form'],
     ['Name', inquiry.full_name],
@@ -217,6 +219,9 @@ export function InquiryDetail({ inquiry, notes: initialNotes }: { inquiry: Inqui
     ['Email', inquiry.email],
     ['WhatsApp', inquiry.whatsapp],
     ['Wedding date', inquiry.wedding_date ? formatDate(inquiry.wedding_date) : ''],
+    ['Slot', inquiry.slot === 'day' ? 'Day (siang)' : inquiry.slot === 'night' ? 'Night (malam)' : ''],
+    ['Cover time', inquiry.cover_time ?? ''],
+    ['Bride / groom Instagram', inquiry.instagram ?? ''],
     ['Location or venue', inquiry.location],
     ['Type of celebration', inquiry.celebration_type],
     ['Service', inquiry.service_interest],

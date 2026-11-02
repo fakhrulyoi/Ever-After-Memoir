@@ -7,29 +7,47 @@ import { friendlyDbError, type ActionResult } from './result'
 const STATUSES = ['new', 'contacted', 'booked', 'closed'] as const
 export type InquiryStatus = (typeof STATUSES)[number]
 
-export async function setInquiryStatus(id: string, status: InquiryStatus): Promise<ActionResult<{ dateMarked?: string }>> {
+export async function setInquiryStatus(id: string, status: InquiryStatus): Promise<ActionResult<{ dateMarked?: string; slotMarked?: string }>> {
   const admin = await requireAdmin()
   if (!STATUSES.includes(status)) return { ok: false, error: 'Unknown status.' }
   const sb = await createSupabaseServer()
-  const { data, error } = await sb.from('inquiries').update({ status }).eq('id', id).select('wedding_date, full_name, partner_name').single()
+  const { data: row, error } = await sb.from('inquiries').update({ status }).eq('id', id).select('*').single()
   if (error) return { ok: false, error: friendlyDbError(error.message) }
-  // Booking confirmed: close that date on the public calendar (unless already marked)
+  const data = row as { wedding_date: string | null; full_name: string; partner_name: string; slot?: string | null }
+  // Booking confirmed: take that slot (or the whole day) on the public calendar
   let dateMarked: string | undefined
+  let slotMarked: string | undefined
   if (status === 'booked' && data?.wedding_date) {
-    const { data: existing } = await sb.from('availability').select('status').eq('day', data.wedding_date).maybeSingle()
-    if (!existing || existing.status !== 'booked') {
-      const who = [data.full_name, data.partner_name].filter(Boolean).join(' & ')
-      const { error: e2 } = await sb
+    const { data: existing } = await sb.from('availability').select('*').eq('day', data.wedding_date).maybeSingle()
+    const ex = existing as { status: string; slot?: string | null; note?: string } | null
+    const who = [data.full_name, data.partner_name].filter(Boolean).join(' & ')
+    const slot = data.slot === 'day' || data.slot === 'night' ? data.slot : null
+    let next: { status: string; slot: string | null; note: string } | null = null
+    if (!slot) {
+      if (!ex || ex.status !== 'booked') next = { status: 'booked', slot: null, note: `Booked: ${who}` }
+    } else if (!ex) {
+      next = { status: 'limited', slot, note: `${slot === 'day' ? 'Day' : 'Night'}: ${who}` }
+    } else if (ex.status === 'limited' && ex.slot && ex.slot !== slot) {
+      next = { status: 'booked', slot: null, note: `${ex.note ?? ''} · ${slot === 'day' ? 'Day' : 'Night'}: ${who}` }
+    } else if (ex.status === 'limited' && !ex.slot) {
+      next = { status: 'booked', slot: null, note: `Booked: ${who}` }
+    }
+    if (next) {
+      let { error: e2 } = await sb
         .from('availability')
-        .upsert({ day: data.wedding_date, status: 'booked', note: `Booked: ${who}`.slice(0, 300), updated_by: admin.userId }, { onConflict: 'day' })
+        .upsert({ day: data.wedding_date, status: next.status, slot: next.slot, note: next.note.slice(0, 300), updated_by: admin.userId }, { onConflict: 'day' })
+      // Before 0005_slots.sql there is no slot column: close the whole day
+      if (e2 && /slot/.test(e2.message))
+        ({ error: e2 } = await sb.from('availability').upsert({ day: data.wedding_date, status: 'booked', note: `Booked: ${who}`.slice(0, 300), updated_by: admin.userId }, { onConflict: 'day' }))
       if (!e2) {
         dateMarked = data.wedding_date
+        slotMarked = next.status === 'limited' ? next.slot ?? undefined : undefined
         revalidatePath('/', 'layout')
       }
     }
   }
   revalidatePath('/admin/inquiries')
-  return { ok: true, dateMarked }
+  return { ok: true, dateMarked, slotMarked }
 }
 
 export interface InquiryNote {

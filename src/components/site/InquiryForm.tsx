@@ -268,7 +268,7 @@ export function InquiryForm({ s, data, first = true }: { s: InquirySection; data
                       className="mt-1 h-5 w-5 shrink-0 accent-olive-deep"
                     />
                     <span>
-                      {L('inq.consent')}{' '}
+                      {t('inq.consent', { site: settings.siteTitle })}{' '}
                       <SiteLink href="/privacy" className="underline underline-offset-4">{L('form.privacyLink')}</SiteLink>.
                     </span>
                   </label>

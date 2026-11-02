@@ -304,7 +304,9 @@ with sync_playwright() as p:
         cal.get_by_role('button', name='Continue on WhatsApp').click()
         expect(cal.get_by_text('Please tell us your name')).to_be_visible()
         expect(cal.get_by_text('Roughly what time should we cover?')).to_be_visible()
+        expect(cal.get_by_text('Please choose the type of celebration')).to_be_visible()
         cal.get_by_role('radio', name=re.compile('^Night')).click()
+        cal.get_by_role('radiogroup', name='Type of celebration').get_by_role('radio').nth(1).click()
         page.locator('#bk-fullName').fill(booker)
         page.locator('#bk-location').fill('Kuantan')
         page.locator('#bk-coverTime').fill('8pm - 11pm')
@@ -316,7 +318,7 @@ with sync_playwright() as p:
         assert wa and 'text=' in wa[0], 'no WhatsApp redirect'
         from urllib.parse import unquote
         msg = unquote(wa[0].split('text=', 1)[1])
-        for bit in ('Slot: Night', 'Location: Kuantan', 'Cover time: 8pm - 11pm', 'Instagram: @e2e.couple', booker):
+        for bit in ('Slot: Night', 'Celebration: ', 'Location: Kuantan', 'Cover time: 8pm - 11pm', 'Instagram: @e2e.couple', booker):
             assert bit in msg, f'WhatsApp message missing {bit!r}: {msg}'
         ctx.close()
         # Owner marks it booked: only the night slot closes; the day slot stays open

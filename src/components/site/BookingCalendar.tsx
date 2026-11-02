@@ -125,6 +125,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
   const [dir, setDir] = useState(1)
   const [selected, setSelected] = useState<string | null>(null)
   const [slot, setSlot] = useState<Slot | null>(null)
+  const [celebration, setCelebration] = useState('')
   const [focusDay, setFocusDay] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
   const [errors, setErrors] = useState<Errors>({})
@@ -211,6 +212,7 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
     const payload = {
       date: selected,
       slot: slot ?? '',
+      celebrationType: celebration || (settings.celebrationTypes.length ? '' : '—'),
       fullName: String(fd.get('fullName') ?? ''),
       location: String(fd.get('location') ?? ''),
       coverTime: String(fd.get('coverTime') ?? ''),
@@ -384,6 +386,30 @@ export function BookingCalendar({ s, data, first = true }: { s: BookingSection; 
                               </div>
                               <Err name="slot" />
                             </fieldset>
+                            {settings.celebrationTypes.length > 0 && (
+                              <fieldset className="sm:col-span-2">
+                                <legend className="text-[0.875rem] font-medium text-ink-soft">{t('book.type')} <span className="text-olive" aria-hidden>*</span></legend>
+                                <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label={t('book.type')}>
+                                  {settings.celebrationTypes.map((c, i) => {
+                                    const on = celebration === c
+                                    return (
+                                      <button
+                                        key={c}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={on}
+                                        data-field={i === 0 ? 'celebrationType' : undefined}
+                                        onClick={() => { setCelebration(c); setErrors((e) => ({ ...e, celebrationType: '' })) }}
+                                        className={`min-h-11 rounded-full border px-4 py-2 text-[0.9375rem] transition-colors ${on ? 'border-olive-deep bg-olive-deep text-ivory' : 'border-charcoal/20 bg-white/60 text-charcoal hover:border-olive-deep'}`}
+                                      >
+                                        {c}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                                <Err name="celebrationType" />
+                              </fieldset>
+                            )}
                             <div>
                               <label htmlFor="bk-fullName" className="block text-[0.875rem] font-medium text-ink-soft">{t('book.name')} <span className="text-olive" aria-hidden>*</span></label>
                               <input {...aria('fullName')} autoComplete="name" className={inputCls} />

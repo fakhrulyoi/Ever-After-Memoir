@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
     email: d.email.toLowerCase(),
     wedding_date: d.date,
     location: d.location,
+    celebration_type: d.celebrationType,
     consent: d.consent,
     ip_hash: hash,
   }
@@ -106,12 +107,13 @@ export async function POST(req: NextRequest) {
     location: d.location,
     time: d.coverTime,
     instagram: d.instagram,
+    type: d.celebrationType,
     ref,
   }, lang === 'ms'
-    ? [['name', 'Nama'], ['date', 'Tarikh'], ['slot', 'Slot'], ['location', 'Tempat'], ['time', 'Cover time'], ['instagram', 'IG pengantin']]
-    : [['name', 'Name'], ['date', 'Date'], ['slot', 'Slot'], ['location', 'Location'], ['time', 'Cover time'], ['instagram', 'Instagram']])
+    ? [['name', 'Nama'], ['date', 'Tarikh'], ['slot', 'Slot'], ['type', 'Majlis'], ['location', 'Tempat'], ['time', 'Cover time'], ['instagram', 'IG pengantin']]
+    : [['name', 'Name'], ['date', 'Date'], ['slot', 'Slot'], ['type', 'Celebration'], ['location', 'Location'], ['time', 'Cover time'], ['instagram', 'Instagram']])
   await notifyOwner(
-    { Date: formatLong(d.date), Slot: d.slot === 'day' ? 'Day' : 'Night', Name: d.fullName, Location: d.location, 'Cover time': d.coverTime, Instagram: d.instagram, Email: d.email, Reference: ref },
+    { Date: formatLong(d.date), Slot: d.slot === 'day' ? 'Day' : 'Night', Celebration: d.celebrationType, Name: d.fullName, Location: d.location, 'Cover time': d.coverTime, Instagram: d.instagram, Email: d.email, Reference: ref },
     { id: inserted.id, subject: `New booking — ${formatLong(d.date)}, ${d.slot === 'day' ? 'day' : 'night'} (${d.fullName})`, replyTo: d.email || undefined },
   ).catch((e) => console.error('notification email failed', e))
   return json({ ok: true, ref, whatsappUrl: wa ? waLink(wa, message) : null })

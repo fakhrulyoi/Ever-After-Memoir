@@ -34,6 +34,7 @@ export function openSlots(row: AvailabilityDay | undefined): Slot[] {
 export const bookingSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'err.calendarDate'),
   slot: z.enum(['day', 'night'], { message: 'err.slot' }),
+  celebrationType: z.string().trim().min(1, 'err.type').max(80, 'err.long'),
   fullName: z.string().trim().min(1, 'err.name').max(120, 'err.nameLong'),
   location: z.string().trim().min(1, 'err.location').max(200),
   coverTime: z.string().trim().min(1, 'err.coverTime').max(80, 'err.long'),

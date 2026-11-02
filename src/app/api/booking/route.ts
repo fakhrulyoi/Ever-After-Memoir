@@ -107,7 +107,9 @@ export async function POST(req: NextRequest) {
     time: d.coverTime,
     instagram: d.instagram,
     ref,
-  })
+  }, lang === 'ms'
+    ? [['name', 'Nama'], ['date', 'Tarikh'], ['slot', 'Slot'], ['location', 'Tempat'], ['time', 'Cover time'], ['instagram', 'IG pengantin']]
+    : [['name', 'Name'], ['date', 'Date'], ['slot', 'Slot'], ['location', 'Location'], ['time', 'Cover time'], ['instagram', 'Instagram']])
   await notifyOwner(
     { Date: formatLong(d.date), Slot: d.slot === 'day' ? 'Day' : 'Night', Name: d.fullName, Location: d.location, 'Cover time': d.coverTime, Instagram: d.instagram, Email: d.email, Reference: ref },
     { id: inserted.id, subject: `New booking — ${formatLong(d.date)}, ${d.slot === 'day' ? 'day' : 'night'} (${d.fullName})`, replyTo: d.email || undefined },

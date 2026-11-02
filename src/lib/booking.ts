@@ -68,8 +68,19 @@ export interface MessageValues {
 }
 
 /** Fill the owner's WhatsApp template. Lines whose placeholders are all empty are dropped. */
-export function fillMessage(template: string, v: MessageValues) {
+/**
+ * Fill the owner's WhatsApp template. Details the template has no placeholder
+ * for (e.g. an older, edited template) are added before the reference line, so
+ * the owner always receives the full booking.
+ */
+export function fillMessage(template: string, v: MessageValues, required: [keyof MessageValues, string][] = []) {
   const lines = template.split('\n')
+  const missing = required.filter(([k]) => !template.includes(`{${k}}`)).map(([k, label]) => `${label}: {${k}}`)
+  if (missing.length) {
+    const at = lines.findIndex((l) => l.includes('{ref}'))
+    if (at === -1) lines.push('', ...missing)
+    else lines.splice(at > 0 && !lines[at - 1].trim() ? at - 1 : at, 0, ...missing)
+  }
   const out: string[] = []
   for (const line of lines) {
     const keys = [...line.matchAll(/\{(\w+)\}/g)].map((m) => m[1] as keyof MessageValues)

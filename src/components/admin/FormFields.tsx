@@ -350,7 +350,7 @@ function ReelsField({ id, label, value, onChange }: { id: string; label: string;
           <input aria-label={`Reel ${i + 1} caption`} placeholder="Caption, e.g. Getting ready" className={inputClass} value={r.caption} maxLength={80} onChange={(e) => update(i, { caption: e.target.value })} />
         </div>
       ))}
-      {value.length < 8 && <Button onClick={() => onChange([...value, { video: null, poster: null, caption: '' }])}>Add a reel</Button>}
+      {value.length < 12 && <Button onClick={() => onChange([...value, { video: null, poster: null, caption: '' }])}>Add a reel</Button>}
     </fieldset>
   )
 }

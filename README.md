@@ -107,7 +107,9 @@ Buka `/admin`. Halaman **Overview** ada senarai “Before you launch”:
 
 Tips teks: dalam tajuk, `*perkataan*` jadi *italic* dan Enter jadi baris baru. Dalam “Long text”, `## ` di awal baris jadi sub-tajuk.
 
-**Media library**: drag & drop gambar (≤15 MB) dan video (≤50 MB).
+**Media library**: drag & drop gambar (≤15 MB) dan video.
+- Video dikecilkan automatik dalam browser sebelum upload (720p MP4, 30fps), biasanya 5–10× lebih kecil. Ini jimatkan kuota bandwidth (Cached Egress) Supabase, sebab setiap pelawat download video penuh.
+- Video lama yang besar: tekan **Compress all** di atas Media library, atau **Compress video** dalam butiran fail. Fail ditukar di semua tempat ia digunakan. Biarkan tab terbuka sampai siap; guna Chrome atau Safari di komputer.
 - Isi *alt text* supaya mesra pembaca skrin dan Google.
 - **Replace file** menukar fail di semua tempat ia digunakan.
 - Fail yang sedang dipakai di website akan diberi amaran sebelum dipadam.

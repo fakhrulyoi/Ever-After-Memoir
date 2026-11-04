@@ -15,6 +15,27 @@ import {
 import type { MediaRef } from '@/lib/content/types'
 import { Button, Confirm, EmptyState, FieldShell, formatBytes, formatWhen, inputClass } from './ui'
 import { uploadFile, validateFile } from './upload'
+import { compressVideo, videoNeedsCompress } from './compress'
+
+const isLargeVideo = (a: MediaAsset) =>
+  a.type === 'video' && Boolean(a.storage_path) && videoNeedsCompress({ mime: a.mime, size: a.size_bytes, width: a.width, height: a.height })
+
+/**
+ * Re-encode a video already in the library (720p MP4) and swap the file
+ * everywhere it is used. Progress 0–1: compressing, then uploading.
+ */
+async function compressAsset(a: MediaAsset, onProgress: (p: number) => void): Promise<MediaAsset> {
+  const res = await fetch(a.url)
+  if (!res.ok) throw new Error('Could not download the video to compress it.')
+  const blob = await res.blob()
+  const name = a.url.split('/').pop() ?? 'video.mov'
+  const small = await compressVideo(new File([blob], name, { type: a.mime }), name, (p) => onProgress(p * 0.85))
+  if (small.size >= a.size_bytes) throw new Error('This browser could not make this video smaller. Try Chrome or Safari on a computer.')
+  const up = await uploadFile(small, (p) => onProgress(0.85 + p * 0.15), { compress: false })
+  const saved = await replaceMedia(a.id, { ...up, alt: a.alt_text, folder: a.folder })
+  if (!saved.ok) throw new Error(saved.error)
+  return saved.asset
+}
 
 export function assetToRef(a: MediaAsset): MediaRef {
   return { id: a.id, url: a.url, type: a.type, alt: a.alt_text, width: a.width, height: a.height, poster: null, isSample: a.is_sample }
@@ -125,7 +146,7 @@ export function MediaLibrary({
         >
           <p className="text-[0.9375rem]">Drag photos or videos here, or</p>
           <Button variant="primary" onClick={() => fileInput.current?.click()}>Choose files to upload</Button>
-          <p className="text-xs text-ink-soft">JPG, PNG, WebP, AVIF up to 15 MB · MP4, WebM, MOV up to 50 MB</p>
+          <p className="text-xs text-ink-soft">JPG, PNG, WebP, AVIF up to 15 MB · MP4, WebM, MOV (videos are made smaller automatically)</p>
           <input
             ref={fileInput}
             type="file"
@@ -163,6 +184,8 @@ export function MediaLibrary({
             ))}
           </ul>
         )}
+
+        {mode === 'manage' && <BulkCompress assets={assets} onDone={(a) => setAssets((x) => x.map((y) => (y.id === a.id ? a : y)))} />}
 
         {/* Filters */}
         <div className="mb-4 flex flex-wrap gap-3">
@@ -276,6 +299,7 @@ function MediaDetails({
   const [confirm, setConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [replacing, setReplacing] = useState<number | null>(null)
+  const [shrinking, setShrinking] = useState<number | null>(null)
   const replaceInput = useRef<HTMLInputElement>(null)
   const dirty = alt !== asset.alt_text || caption !== asset.caption || folder !== asset.folder
   const live = usage?.some((u) => u.in_published)
@@ -305,6 +329,20 @@ function MediaDetails({
       toast.error((e as Error).message)
     } finally {
       setReplacing(null)
+    }
+  }
+
+  const shrink = async () => {
+    setShrinking(0)
+    try {
+      const before = asset.size_bytes
+      const next = await compressAsset(asset, setShrinking)
+      onChange(next)
+      toast.success(`Video compressed: ${formatBytes(before)} → ${formatBytes(next.size_bytes)}`)
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setShrinking(null)
     }
   }
 
@@ -374,6 +412,15 @@ function MediaDetails({
         )}
       </div>
 
+      {isLargeVideo(asset) && (
+        <div className="space-y-2 border border-olive/30 bg-cream/60 p-3 text-xs">
+          <p>This video is large. Every visitor downloads it in full, which uses up your storage bandwidth. Compressing makes it 720p MP4 (looks the same on the website) and swaps it everywhere it is used.</p>
+          <Button variant="primary" className="min-h-8" busy={shrinking !== null} disabled={replacing !== null} onClick={shrink}>
+            {shrinking !== null ? `Compressing ${Math.round(shrinking * 100)}%` : 'Compress video'}
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2 border-t border-charcoal/10 pt-4">
         <Button busy={replacing !== null} onClick={() => replaceInput.current?.click()}>
           {replacing !== null ? `Replacing ${Math.round(replacing * 100)}%` : 'Replace file'}
@@ -404,5 +451,48 @@ function MediaDetails({
         onCancel={() => setConfirm(false)}
       />
     </aside>
+  )
+}
+
+/** Banner: compress every large video in the library, one after another. */
+function BulkCompress({ assets, onDone }: { assets: MediaAsset[]; onDone: (a: MediaAsset) => void }) {
+  const large = assets.filter(isLargeVideo)
+  const [running, setRunning] = useState<{ n: number; total: number; p: number } | null>(null)
+  const [failed, setFailed] = useState(0)
+  if (!large.length && !running) return null
+  const total = large.reduce((t, a) => t + a.size_bytes, 0)
+
+  const run = async () => {
+    const list = [...large]
+    let bad = 0
+    let saved = 0
+    for (let i = 0; i < list.length; i++) {
+      setRunning({ n: i + 1, total: list.length, p: 0 })
+      try {
+        const next = await compressAsset(list[i], (p) => setRunning({ n: i + 1, total: list.length, p }))
+        saved += list[i].size_bytes - next.size_bytes
+        onDone(next)
+      } catch {
+        bad++
+      }
+    }
+    setRunning(null)
+    setFailed(bad)
+    if (saved > 0) toast.success(`Done. Videos are ${formatBytes(saved)} smaller in total.`)
+    if (bad) toast.error(`${bad} video${bad > 1 ? 's' : ''} could not be compressed in this browser.`)
+  }
+
+  return (
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border border-olive/30 bg-cream/60 px-4 py-3 text-sm" aria-live="polite">
+      <p className="max-w-xl">
+        {running
+          ? `Compressing video ${running.n} of ${running.total} (${Math.round(running.p * 100)}%). Keep this tab open.`
+          : `${large.length} large video${large.length > 1 ? 's' : ''} (${formatBytes(total)}) use up your website bandwidth quickly. Compress them to 720p: they look the same on the website and load faster.`}
+        {!running && failed > 0 && ' Some could not be compressed in this browser; try Chrome or Safari on a computer.'}
+      </p>
+      <Button variant="primary" busy={Boolean(running)} onClick={run}>
+        {running ? 'Compressing…' : 'Compress all'}
+      </Button>
+    </div>
   )
 }

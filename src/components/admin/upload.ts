@@ -1,6 +1,10 @@
 'use client'
 import { getBrowserSupabase } from '@/lib/supabase/browser'
 import { IMAGE_MIME, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, MEDIA_BUCKET, SUPABASE_ANON_KEY, SUPABASE_URL, VIDEO_MIME } from '@/lib/env'
+import { compressVideo, videoNeedsCompress } from './compress'
+
+/** Videos are compressed in the browser first, so larger originals are accepted */
+export const MAX_RAW_VIDEO_BYTES = 1024 * 1024 * 1024
 
 export interface UploadedFile {
   path: string
@@ -16,7 +20,7 @@ export function validateFile(file: File): string | null {
   const isVideo = VIDEO_MIME.includes(file.type)
   if (!isImage && !isVideo) return `${file.name}: only JPG, PNG, WebP, AVIF, GIF, MP4, WebM or MOV files can be uploaded.`
   if (isImage && file.size > MAX_IMAGE_BYTES) return `${file.name} is larger than 15 MB. Export it smaller and try again.`
-  if (isVideo && file.size > MAX_VIDEO_BYTES) return `${file.name} is larger than 50 MB. Export a shorter or compressed version.`
+  if (isVideo && file.size > MAX_RAW_VIDEO_BYTES) return `${file.name} is larger than 1 GB. Export a shorter version and try again.`
   return null
 }
 
@@ -44,10 +48,28 @@ async function readDimensions(file: File): Promise<Pick<UploadedFile, 'width' | 
   }
 }
 
-/** Upload straight from the browser to Supabase Storage, reporting progress (0–1). */
-export async function uploadFile(file: File, onProgress: (p: number) => void): Promise<UploadedFile> {
+/**
+ * Upload straight from the browser to Supabase Storage, reporting progress (0–1).
+ * Large videos are first shrunk to 720p MP4 (see compress.ts); that step takes
+ * the first half of the progress bar.
+ */
+export async function uploadFile(file: File, onProgress: (p: number) => void, opts: { compress?: boolean } = {}): Promise<UploadedFile> {
   const problem = validateFile(file)
   if (problem) throw new Error(problem)
+  let send = onProgress
+  if (VIDEO_MIME.includes(file.type) && opts.compress !== false) {
+    const before = await readDimensions(file)
+    if (videoNeedsCompress({ mime: file.type, size: file.size, ...before })) {
+      try {
+        file = await compressVideo(file, file.name, (p) => onProgress(p * 0.5))
+      } catch {
+        // Browser could not decode this file: upload the original if it fits
+      }
+      send = (p) => onProgress(0.5 + p * 0.5)
+    }
+  }
+  if (VIDEO_MIME.includes(file.type) && file.size > MAX_VIDEO_BYTES)
+    throw new Error(`${file.name} is still larger than 50 MB after compressing. Export a shorter clip and try again.`)
   const { data } = await getBrowserSupabase().auth.getSession()
   const token = data.session?.access_token
   if (!token) throw new Error('Your session has expired. Sign in again to upload.')
@@ -64,7 +86,7 @@ export async function uploadFile(file: File, onProgress: (p: number) => void): P
     xhr.setRequestHeader('Content-Type', file.type)
     xhr.setRequestHeader('cache-control', 'max-age=31536000')
     xhr.setRequestHeader('x-upsert', 'false')
-    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total)
+    xhr.upload.onprogress = (e) => e.lengthComputable && send(e.loaded / e.total)
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) return resolve()
       let msg = `Upload failed (${xhr.status}).`
@@ -80,6 +102,6 @@ export async function uploadFile(file: File, onProgress: (p: number) => void): P
     xhr.onerror = () => reject(new Error('The connection dropped during upload. Check your internet and retry.'))
     xhr.send(file)
   })
-  onProgress(1)
+  send(1)
   return { path, mime: file.type, size: file.size, ...dims }
 }
